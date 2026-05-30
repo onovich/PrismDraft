@@ -94,7 +94,13 @@ For manual visual inspection, run:
 tools\SmokeViewportInteractive.cmd
 ```
 
-The automated command builds the viewport executable, renders the hidden Raylib viewport, writes `captures/phase2_cube.png`, and exits. The interactive command opens a visible Raylib window and exits when the window is closed.
+For automated process lifecycle verification, run:
+
+```powershell
+tools\SmokeViewportLifecycle.cmd
+```
+
+The automated command builds the viewport executable, renders the hidden Raylib viewport, writes `captures/phase2_cube.png`, and exits. The interactive command opens a visible Raylib window and exits when the window is closed. The lifecycle command opens the interactive viewport, sends a normal window close message, and verifies the process exits with code `0`.
 
 ## Dev Server
 
