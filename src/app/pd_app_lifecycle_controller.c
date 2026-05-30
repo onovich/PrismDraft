@@ -3,6 +3,7 @@
 #include "prismdraft/core/pd_core_cube_fixture.h"
 #include "prismdraft/core/pd_core_mesh_storage_controller.h"
 #include "prismdraft/editor/pd_editor_selection_state.h"
+#include "prismdraft/editor/pd_editor_transform_state.h"
 
 PdCoreResult pd_app_lifecycle_controller_init(PdAppContextEntity* app_context)
 {
@@ -15,6 +16,12 @@ PdCoreResult pd_app_lifecycle_controller_init(PdAppContextEntity* app_context)
     *app_context = (PdAppContextEntity){ 0 };
 
     result = pd_editor_selection_state_init(&app_context->selection_state);
+    if (result != PD_CORE_RESULT_OK) {
+        pd_app_lifecycle_controller_shutdown(app_context);
+        return result;
+    }
+
+    result = pd_editor_transform_state_init(&app_context->transform_state);
     if (result != PD_CORE_RESULT_OK) {
         pd_app_lifecycle_controller_shutdown(app_context);
         return result;
