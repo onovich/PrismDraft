@@ -28,8 +28,8 @@ The first milestone is not a full editor. It is a clean, testable foundation: C1
 - [x] Implement mesh invariant validator for index ranges, closed face loops, and pair symmetry.
 - [x] Add a deterministic cube half-edge fixture.
 - [x] Add tests for init/free/reserve, cube fixture counts, and validator failure cases.
-- [ ] Define `PdAppContextEntity` as the root of long-lived state.
-- [ ] Add the minimal app lifecycle controller.
+- [x] Define `PdAppContextEntity` as the root of long-lived state.
+- [x] Add the minimal app lifecycle controller.
 - [ ] Add Raylib window/camera wrapper under `engine`.
 - [ ] Add render mesh buffer flattening from core mesh data.
 - [ ] Add a first hard-step shader pass for vertex color and face normal lighting.

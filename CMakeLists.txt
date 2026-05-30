@@ -30,6 +30,26 @@ else()
   target_compile_options(prismdraft_core PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
+add_library(prismdraft_app STATIC
+  src/app/pd_app_lifecycle_controller.c
+)
+
+target_include_directories(prismdraft_app
+  PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(prismdraft_app
+  PUBLIC
+    prismdraft_core
+)
+
+if(MSVC)
+  target_compile_options(prismdraft_app PRIVATE /W4 /WX)
+else()
+  target_compile_options(prismdraft_app PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 add_executable(pd_core_result_test
   tests/core/pd_core_result_test.c
 )
@@ -148,6 +168,26 @@ endif()
 add_test(
   NAME pd_core_cube_fixture_test
   COMMAND pd_core_cube_fixture_test
+)
+
+add_executable(pd_app_lifecycle_controller_test
+  tests/app/pd_app_lifecycle_controller_test.c
+)
+
+target_link_libraries(pd_app_lifecycle_controller_test
+  PRIVATE
+    prismdraft_app
+)
+
+if(MSVC)
+  target_compile_options(pd_app_lifecycle_controller_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_app_lifecycle_controller_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_app_lifecycle_controller_test
+  COMMAND pd_app_lifecycle_controller_test
 )
 
 add_test(
