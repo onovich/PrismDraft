@@ -17,6 +17,7 @@ The first milestone is not a full editor. It is a clean, testable foundation: C1
 - [x] Add project TODO.
 - [x] Add initial repository scaffold directories.
 - [x] Add line-ending and ignore rules.
+- [x] Add minimal CMake/CTest build and test entrypoints.
 
 ## Phase 1: Memory Skeleton And Viewport
 

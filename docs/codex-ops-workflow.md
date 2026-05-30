@@ -38,6 +38,37 @@ C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\ReleaseDry
 
 lint, typecheck, build, test, structureCheck, docsCheck
 
+## Environment Check
+
+`envCheck` runs:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\FindCMake.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\FindNinja.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\FindVsDevCmd.ps1
+```
+
+The finders accept tools on PATH and known Windows Visual Studio tool locations.
+
+## Build
+
+`build` runs:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\ConfigureBuild.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Build.ps1
+```
+
+The build currently configures the minimal C11/CTest scaffold and has no Raylib dependency.
+
+## Test
+
+`test` runs:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Test.ps1
+```
+
 ## Structure Check
 
 `structureCheck` runs:

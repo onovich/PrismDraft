@@ -15,7 +15,9 @@
     "operations":  {
                        "envCheck":  {
                                         "commands":  [
-
+                                                        "powershell -NoProfile -ExecutionPolicy Bypass -File tools\\FindCMake.ps1",
+                                                        "powershell -NoProfile -ExecutionPolicy Bypass -File tools\\FindNinja.ps1",
+                                                        "powershell -NoProfile -ExecutionPolicy Bypass -File tools\\FindVsDevCmd.ps1"
                                                      ]
                                     },
                        "restoreDeps":  {
@@ -30,12 +32,13 @@
                                        },
                        "build":  {
                                      "commands":  [
-
+                                                     "powershell -NoProfile -ExecutionPolicy Bypass -File tools\\ConfigureBuild.ps1",
+                                                     "powershell -NoProfile -ExecutionPolicy Bypass -File tools\\Build.ps1"
                                                   ]
                                  },
                        "test":  {
                                     "commands":  [
-
+                                                    "powershell -NoProfile -ExecutionPolicy Bypass -File tools\\Test.ps1"
                                                  ]
                                 },
                        "lint":  {
