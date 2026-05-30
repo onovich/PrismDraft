@@ -72,6 +72,10 @@ Follow-up target:
 
 - Treat this as Phase 5 visual polish before expanding the interactive editor surface. Fix render-target resize handling, edge alignment, and anti-aliasing, then capture a new `captures/phase2_cube.png` and compare again with `sample/`.
 
+Process follow-up:
+
+- 2026-05-31: After the user closed the interactive window, a local process check found no remaining PrismDraft or Raylib viewport process.
+
 ## Phase 5 Edge And Anti-Aliasing Check
 
 Screenshot command:
@@ -107,9 +111,16 @@ Controls:
 - Middle mouse drag: pan camera target and position.
 - Mouse wheel: zoom the orthographic camera.
 - Left click: pick a cube face and rebuild selected-face highlight.
+- `W` / `S`: move the object along smoke Z.
+- `A` / `D`: move the object along smoke X.
+- `Q` / `E`: move the object vertically.
+- `R` / `F`: rotate the object around Y.
+- `Z` / `X`: scale the object down or up.
+- `T`: reset object transform.
 
 Current comparison:
 
 - Pass: The interaction layer uses existing `editor` face picking and render face highlight buffers instead of duplicating business logic in the app layer.
 - Pass: The default screenshot smoke remains non-interactive and still exits after rendering `captures/phase2_cube.png`.
-- Watch: User-facing tool UI and explicit transform/color/lighting controls are still Phase 6 work.
+- Watch: User-facing tool UI and explicit color, outline, and lighting controls are still Phase 6 work.
+- Watch: The user still needs to manually re-check edge placement and anti-aliasing in the interactive viewport after the Phase 5 render pass.

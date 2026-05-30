@@ -4,9 +4,28 @@ This TODO translates the design mirror and visual references into small Codex-si
 
 ## Current Focus
 
-Phase 5: Viewport polish and interaction foundation.
+Phase 6: Basic editor controls and user-facing smoke readiness.
 
-The current milestone is turning the proven data/render/export pieces into a user-testable editor loop, while fixing the viewport polish issues found in manual smoke and making the expected basic interactions explicit.
+The current milestone is turning the proven data/render/export pieces into a small but testable editor loop. Keep the manual smoke feedback visible until the user has re-checked the viewport and the interaction controls feel complete enough for repeated testing.
+
+## Open User-Facing TODO
+
+These items track the issues and expected controls from manual smoke. Do not remove an item just because an implementation pass exists; close it only after automated validation and, where visual quality is involved, a fresh manual or screenshot comparison.
+
+- [x] Verify the viewport process exits after the window is closed.
+- [x] Make the viewport window resizable and recreate render targets on resize.
+- [ ] Re-check edge compositing so silhouettes and crease lines read as structural boundaries, not face-overpaint artifacts.
+- [ ] Re-check anti-aliasing for diagonal face boundaries, diagonal edge overlay, and hard projected shadow.
+- [x] Add camera orbit, pan, and zoom for inspection.
+- [x] Add face selection feedback through the editor picking path.
+- [x] Add object move, rotate, scale, and reset controls.
+- [ ] Add face color adjustment controls.
+- [ ] Add background color adjustment controls.
+- [ ] Add outline thickness and edge-threshold adjustment controls.
+- [ ] Add lighting controls for light direction, dark intensity, shadow strength, and shadow offset.
+- [ ] Add a compact overlay that exposes current selection, transform, color, outline, and lighting values.
+- [ ] Wire modeling commands into interactive smoke: inset, extrude, bevel, and loop cut.
+- [ ] Add app-level glTF and GLB export smoke from the edited mesh.
 
 ## Phase 0: Preparation
 
@@ -88,7 +107,7 @@ The current milestone is turning the proven data/render/export pieces into a use
 ## Phase 6: Basic Editor Controls
 
 - [x] Add object transform state for move, rotate, and scale.
-- [ ] Add transform controls or keyboard shortcuts for move, rotate, and scale.
+- [x] Add transform controls or keyboard shortcuts for move, rotate, and scale.
 - [ ] Add keyboard or tool commands in the editor smoke for inset, extrude, bevel, and loop cut.
 - [ ] Add editable face color state and a simple face color adjustment control.
 - [ ] Add editable background color state and a simple background color adjustment control.
