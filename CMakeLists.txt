@@ -165,6 +165,26 @@ else()
   target_compile_options(prismdraft_export PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
+add_library(prismdraft_animation STATIC
+  src/animation/pd_animation_prs_entity.c
+)
+
+target_include_directories(prismdraft_animation
+  PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(prismdraft_animation
+  PUBLIC
+    prismdraft_core
+)
+
+if(MSVC)
+  target_compile_options(prismdraft_animation PRIVATE /W4 /WX)
+else()
+  target_compile_options(prismdraft_animation PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 add_executable(pd_core_result_test
   tests/core/pd_core_result_test.c
 )
@@ -743,6 +763,26 @@ endif()
 add_test(
   NAME pd_export_glb_writer_test
   COMMAND pd_export_glb_writer_test
+)
+
+add_executable(pd_animation_prs_entity_test
+  tests/animation/pd_animation_prs_entity_test.c
+)
+
+target_link_libraries(pd_animation_prs_entity_test
+  PRIVATE
+    prismdraft_animation
+)
+
+if(MSVC)
+  target_compile_options(pd_animation_prs_entity_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_animation_prs_entity_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_animation_prs_entity_test
+  COMMAND pd_animation_prs_entity_test
 )
 
 add_executable(prismdraft_phase1_viewport
