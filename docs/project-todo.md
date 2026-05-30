@@ -26,8 +26,8 @@ The first milestone is not a full editor. It is a clean, testable foundation: C1
 - [x] Define mesh storage config and explicit count/capacity ownership rules.
 - [x] Implement mesh init/free/reserve routines.
 - [x] Implement mesh invariant validator for index ranges, closed face loops, and pair symmetry.
-- [ ] Add a deterministic cube half-edge fixture.
-- [ ] Add tests for init/free/reserve, cube fixture counts, and validator failure cases.
+- [x] Add a deterministic cube half-edge fixture.
+- [x] Add tests for init/free/reserve, cube fixture counts, and validator failure cases.
 - [ ] Define `PdAppContextEntity` as the root of long-lived state.
 - [ ] Add the minimal app lifecycle controller.
 - [ ] Add Raylib window/camera wrapper under `engine`.
