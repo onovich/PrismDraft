@@ -68,7 +68,7 @@ The current milestone is turning the proven data/render/export pieces into a use
 
 - [x] Manually verify that the viewport process exits after the window closes.
 - [x] Add an automated process lifecycle smoke check that verifies the viewport process exits after the window closes.
-- [ ] Support viewport window resizing by recreating render targets and updating edge shader texel size.
+- [x] Support viewport window resizing by recreating render targets and updating edge shader texel size.
 - [ ] Fix edge compositing so silhouette and crease lines read as outer/structural boundaries instead of face-overpaint artifacts.
 - [ ] Add anti-aliasing for diagonal face boundaries, edge overlay, and hard projected shadow.
 - [ ] Re-run visual comparison against `sample/` after edge alignment and anti-aliasing changes.

@@ -85,6 +85,80 @@ static void pd_app_viewport_controller_local_draw_shadow(PdRenderShadowConfig sh
     EndBlendMode();
 }
 
+static PdCoreResult pd_app_viewport_controller_local_resize_targets(
+    PdRenderTargetController* target_controller,
+    int width,
+    int height,
+    Shader edge_shader,
+    int edge_texel_size_location,
+    Vector2* edge_texel_size)
+{
+    if (target_controller == 0 || edge_texel_size == 0 || width <= 0 || height <= 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (target_controller->config.width == width && target_controller->config.height == height &&
+        pd_render_target_controller_is_ready(target_controller)) {
+        return PD_CORE_RESULT_OK;
+    }
+
+    pd_render_target_controller_free(target_controller);
+    if (pd_render_target_controller_init(target_controller, pd_render_target_config_make(width, height)) !=
+        PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    edge_texel_size->x = 1.0f / (float)width;
+    edge_texel_size->y = 1.0f / (float)height;
+    SetShaderValue(edge_shader, edge_texel_size_location, edge_texel_size, SHADER_UNIFORM_VEC2);
+    return PD_CORE_RESULT_OK;
+}
+
+static void pd_app_viewport_controller_local_render_targets(
+    PdRenderTargetController* target_controller,
+    PdEngineCameraState camera_state,
+    PdRenderVisualConfig visual_config,
+    PdRenderShadowConfig shadow_config,
+    Model* cube_model,
+    Model* face_highlight_model,
+    Shader hardstep_shader,
+    Shader depth_shader,
+    Shader normal_shader)
+{
+    Vector3 origin = { 0.0f, 0.0f, 0.0f };
+    Color normal_background = { 128u, 128u, 255u, 255u };
+    Color depth_background = { 255u, 255u, 255u, 255u };
+
+    cube_model->materials[0].shader = hardstep_shader;
+    face_highlight_model->materials[0].shader = hardstep_shader;
+    BeginTextureMode(target_controller->color_depth_target);
+    ClearBackground(visual_config.background_color);
+    BeginMode3D(camera_state.camera);
+    pd_app_viewport_controller_local_draw_shadow(shadow_config);
+    DrawModel(*cube_model, origin, 1.0f, WHITE);
+    BeginBlendMode(BLEND_ALPHA);
+    DrawModel(*face_highlight_model, origin, 1.0f, WHITE);
+    EndBlendMode();
+    EndMode3D();
+    EndTextureMode();
+
+    cube_model->materials[0].shader = depth_shader;
+    BeginTextureMode(target_controller->depth_target);
+    ClearBackground(depth_background);
+    BeginMode3D(camera_state.camera);
+    DrawModel(*cube_model, origin, 1.0f, WHITE);
+    EndMode3D();
+    EndTextureMode();
+
+    cube_model->materials[0].shader = normal_shader;
+    BeginTextureMode(target_controller->normal_target);
+    ClearBackground(normal_background);
+    BeginMode3D(camera_state.camera);
+    DrawModel(*cube_model, origin, 1.0f, WHITE);
+    EndMode3D();
+    EndTextureMode();
+}
+
 int main(int argc, char** argv)
 {
     PdAppContextEntity app_context;
@@ -118,10 +192,8 @@ int main(int argc, char** argv)
     Vector2 edge_texel_size;
     Rectangle screen_source;
     Vector2 screen_position = { 0.0f, 0.0f };
-    Vector3 origin = { 0.0f, 0.0f, 0.0f };
-    Color normal_background = { 128u, 128u, 255u, 255u };
-    Color depth_background = { 255u, 255u, 255u, 255u };
     int is_interactive = pd_app_viewport_controller_local_has_argument(argc, argv, "--interactive");
+    int run_result = 0;
 
     if (pd_app_lifecycle_controller_init(&app_context) != PD_CORE_RESULT_OK) {
         return 1;
@@ -148,7 +220,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    SetConfigFlags((is_interactive ? 0u : FLAG_WINDOW_HIDDEN) | FLAG_MSAA_4X_HINT);
+    SetConfigFlags((is_interactive ? FLAG_WINDOW_RESIZABLE : FLAG_WINDOW_HIDDEN) | FLAG_MSAA_4X_HINT);
     InitWindow(window_config.width, window_config.height, window_config.title);
     SetTargetFPS(60);
 
@@ -188,41 +260,36 @@ int main(int argc, char** argv)
     face_highlight_mesh = pd_app_viewport_controller_local_make_mesh(&face_highlight_buffer);
     face_highlight_model = LoadModelFromMesh(face_highlight_mesh);
 
-    cube_model.materials[0].shader = hardstep_shader;
-    face_highlight_model.materials[0].shader = hardstep_shader;
-    BeginTextureMode(target_controller.color_depth_target);
-    ClearBackground(visual_config.background_color);
-    BeginMode3D(camera_state.camera);
-    pd_app_viewport_controller_local_draw_shadow(shadow_config);
-    DrawModel(cube_model, origin, 1.0f, WHITE);
-    BeginBlendMode(BLEND_ALPHA);
-    DrawModel(face_highlight_model, origin, 1.0f, WHITE);
-    EndBlendMode();
-    EndMode3D();
-    EndTextureMode();
-
-    cube_model.materials[0].shader = depth_shader;
-    BeginTextureMode(target_controller.depth_target);
-    ClearBackground(depth_background);
-    BeginMode3D(camera_state.camera);
-    DrawModel(cube_model, origin, 1.0f, WHITE);
-    EndMode3D();
-    EndTextureMode();
-
-    cube_model.materials[0].shader = normal_shader;
-    BeginTextureMode(target_controller.normal_target);
-    ClearBackground(normal_background);
-    BeginMode3D(camera_state.camera);
-    DrawModel(cube_model, origin, 1.0f, WHITE);
-    EndMode3D();
-    EndTextureMode();
-
-    screen_source = (Rectangle){ 0.0f,
-                                 0.0f,
-                                 (float)target_controller.color_depth_target.texture.width,
-                                 -(float)target_controller.color_depth_target.texture.height };
-
     do {
+        int screen_width = GetScreenWidth();
+        int screen_height = GetScreenHeight();
+
+        if (pd_app_viewport_controller_local_resize_targets(
+                &target_controller,
+                screen_width,
+                screen_height,
+                edge_shader,
+                edge_texel_size_location,
+                &edge_texel_size) != PD_CORE_RESULT_OK) {
+            run_result = 1;
+            break;
+        }
+
+        pd_app_viewport_controller_local_render_targets(
+            &target_controller,
+            camera_state,
+            visual_config,
+            shadow_config,
+            &cube_model,
+            &face_highlight_model,
+            hardstep_shader,
+            depth_shader,
+            normal_shader);
+
+        screen_source = (Rectangle){ 0.0f,
+                                     0.0f,
+                                     (float)target_controller.color_depth_target.texture.width,
+                                     -(float)target_controller.color_depth_target.texture.height };
         BeginDrawing();
         ClearBackground(visual_config.background_color);
         BeginShaderMode(edge_shader);
@@ -233,7 +300,7 @@ int main(int argc, char** argv)
         EndDrawing();
     } while (is_interactive && !WindowShouldClose());
 
-    if (!is_interactive) {
+    if (run_result == 0 && !is_interactive) {
         MakeDirectory("captures");
         TakeScreenshot("captures/phase2_cube.png");
     }
@@ -252,5 +319,5 @@ int main(int argc, char** argv)
     pd_render_mesh_buffer_free(&face_highlight_buffer);
     pd_render_mesh_buffer_free(&render_mesh_buffer);
     pd_app_lifecycle_controller_shutdown(&app_context);
-    return 0;
+    return run_result;
 }
