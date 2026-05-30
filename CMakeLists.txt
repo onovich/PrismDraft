@@ -82,6 +82,26 @@ else()
   target_compile_options(prismdraft_engine PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
+add_library(prismdraft_render STATIC
+  src/render/pd_render_mesh_buffer.c
+)
+
+target_include_directories(prismdraft_render
+  PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(prismdraft_render
+  PUBLIC
+    prismdraft_core
+)
+
+if(MSVC)
+  target_compile_options(prismdraft_render PRIVATE /W4 /WX)
+else()
+  target_compile_options(prismdraft_render PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 add_executable(pd_core_result_test
   tests/core/pd_core_result_test.c
 )
@@ -260,6 +280,26 @@ endif()
 add_test(
   NAME pd_engine_camera_controller_test
   COMMAND pd_engine_camera_controller_test
+)
+
+add_executable(pd_render_mesh_buffer_test
+  tests/render/pd_render_mesh_buffer_test.c
+)
+
+target_link_libraries(pd_render_mesh_buffer_test
+  PRIVATE
+    prismdraft_render
+)
+
+if(MSVC)
+  target_compile_options(pd_render_mesh_buffer_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_render_mesh_buffer_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_render_mesh_buffer_test
+  COMMAND pd_render_mesh_buffer_test
 )
 
 add_test(
