@@ -324,6 +324,23 @@ add_test(
   COMMAND pd_render_hardstep_shader_test
 )
 
+add_executable(prismdraft_phase1_viewport
+  src/app/pd_app_viewport_controller.c
+)
+
+target_link_libraries(prismdraft_phase1_viewport
+  PRIVATE
+    prismdraft_app
+    prismdraft_engine
+    prismdraft_render
+)
+
+if(MSVC)
+  target_compile_options(prismdraft_phase1_viewport PRIVATE /W4 /WX)
+else()
+  target_compile_options(prismdraft_phase1_viewport PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 add_test(
   NAME prismdraft_architecture_check
   COMMAND powershell -NoProfile -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/tools/CheckArchitecture.ps1

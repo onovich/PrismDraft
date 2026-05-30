@@ -13,7 +13,7 @@ int main(void)
     assert(camera_state.camera.target.x == 0.0f);
     assert(camera_state.camera.target.y == 0.0f);
     assert(camera_state.camera.target.z == 0.0f);
-    assert(camera_state.camera.fovy == 35.0f);
+    assert(camera_state.camera.fovy == 4.5f);
     assert(camera_state.orbit_distance == 6.0f);
 
     return 0;
