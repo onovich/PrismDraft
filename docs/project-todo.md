@@ -47,7 +47,7 @@ The current milestone is the first editable loop: selection state, picking, face
 
 ## Phase 3: Modeling Tools
 
-- [ ] Define editor selection state for vertex, edge, and face selection.
+- [x] Define editor selection state for vertex, edge, and face selection.
 - [ ] Implement ray picking against flattened or core mesh geometry.
 - [ ] Add face highlight rendering path.
 - [ ] Implement face inset with topology proof comment and validator call.

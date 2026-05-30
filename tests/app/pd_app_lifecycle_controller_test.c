@@ -13,6 +13,7 @@ static void pd_app_lifecycle_controller_test_local_init_builds_active_cube_mesh(
     assert(app_context.active_mesh.vertex_count == 8u);
     assert(app_context.active_mesh.half_edge_count == 24u);
     assert(app_context.active_mesh.face_count == 6u);
+    assert(app_context.selection_state.kind == PD_EDITOR_SELECTION_KIND_NONE);
     assert(pd_core_mesh_validator_check(&app_context.active_mesh) == PD_CORE_RESULT_OK);
 
     pd_app_lifecycle_controller_shutdown(&app_context);
@@ -29,6 +30,7 @@ static void pd_app_lifecycle_controller_test_local_shutdown_clears_owned_state(v
     assert(app_context.active_mesh.vertices == 0);
     assert(app_context.active_mesh.half_edges == 0);
     assert(app_context.active_mesh.faces == 0);
+    assert(!pd_editor_selection_state_has_selection(&app_context.selection_state));
 }
 
 static void pd_app_lifecycle_controller_test_local_quit_marks_context_not_running(void)

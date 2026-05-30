@@ -82,6 +82,31 @@ else()
   target_compile_options(prismdraft_engine PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
+add_library(prismdraft_editor STATIC
+  src/editor/pd_editor_selection_state.c
+)
+
+target_include_directories(prismdraft_editor
+  PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(prismdraft_editor
+  PUBLIC
+    prismdraft_core
+)
+
+if(MSVC)
+  target_compile_options(prismdraft_editor PRIVATE /W4 /WX)
+else()
+  target_compile_options(prismdraft_editor PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+target_link_libraries(prismdraft_app
+  PUBLIC
+    prismdraft_editor
+)
+
 add_library(prismdraft_render STATIC
   src/render/pd_render_depth_shader.c
   src/render/pd_render_edge_shader.c
@@ -249,6 +274,26 @@ endif()
 add_test(
   NAME pd_app_lifecycle_controller_test
   COMMAND pd_app_lifecycle_controller_test
+)
+
+add_executable(pd_editor_selection_state_test
+  tests/editor/pd_editor_selection_state_test.c
+)
+
+target_link_libraries(pd_editor_selection_state_test
+  PRIVATE
+    prismdraft_editor
+)
+
+if(MSVC)
+  target_compile_options(pd_editor_selection_state_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_editor_selection_state_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_editor_selection_state_test
+  COMMAND pd_editor_selection_state_test
 )
 
 add_executable(pd_engine_window_config_test
