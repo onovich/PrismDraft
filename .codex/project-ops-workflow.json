@@ -17,7 +17,8 @@
                                         "commands":  [
                                                         "powershell -NoProfile -ExecutionPolicy Bypass -File tools\\FindCMake.ps1",
                                                         "powershell -NoProfile -ExecutionPolicy Bypass -File tools\\FindNinja.ps1",
-                                                        "powershell -NoProfile -ExecutionPolicy Bypass -File tools\\FindVsDevCmd.ps1"
+                                                        "powershell -NoProfile -ExecutionPolicy Bypass -File tools\\FindVsDevCmd.ps1",
+                                                        "powershell -NoProfile -ExecutionPolicy Bypass -File tools\\FindRaylib.ps1"
                                                      ]
                                     },
                        "restoreDeps":  {

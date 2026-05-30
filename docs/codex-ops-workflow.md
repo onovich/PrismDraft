@@ -46,9 +46,10 @@ lint, typecheck, build, test, structureCheck, docsCheck
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\FindCMake.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\FindNinja.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\FindVsDevCmd.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\FindRaylib.ps1
 ```
 
-The finders accept tools on PATH and known Windows Visual Studio tool locations.
+The finders accept tools on PATH, known Windows Visual Studio tool locations, and `RAYLIB_SOURCE_DIR` for a local Raylib checkout.
 
 ## Build
 
