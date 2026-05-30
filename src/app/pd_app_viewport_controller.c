@@ -3,6 +3,7 @@
 #include "prismdraft/engine/pd_engine_window_config.h"
 #include "prismdraft/render/pd_render_hardstep_shader.h"
 #include "prismdraft/render/pd_render_mesh_buffer.h"
+#include "prismdraft/render/pd_render_visual_config.h"
 
 #include "raylib.h"
 
@@ -42,6 +43,7 @@ int main(void)
     PdAppContextEntity app_context;
     PdEngineWindowConfig window_config = pd_engine_window_config_default();
     PdEngineCameraState camera_state = pd_engine_camera_controller_make_default();
+    PdRenderVisualConfig visual_config = pd_render_visual_config_default();
     PdRenderHardstepShaderConfig shader_config = pd_render_hardstep_shader_config_default();
     PdRenderMeshBuffer render_mesh_buffer = { 0 };
     Mesh cube_mesh;
@@ -75,7 +77,7 @@ int main(void)
     cube_model.materials[0].shader = hardstep_shader;
 
     BeginDrawing();
-    ClearBackground((Color){ 255u, 114u, 90u, 255u });
+    ClearBackground(visual_config.background_color);
     BeginMode3D(camera_state.camera);
     DrawModel(cube_model, origin, 1.0f, WHITE);
     EndMode3D();

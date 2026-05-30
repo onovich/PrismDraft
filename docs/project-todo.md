@@ -4,7 +4,7 @@ This TODO translates the design mirror and visual references into small Codex-si
 
 ## Current Focus
 
-Phase 1: Memory skeleton and viewport.
+Phase 2: Visual loop.
 
 The first milestone is not a full editor. It is a clean, testable foundation: C11 data types, indexed mesh storage, deterministic cube fixture, and a minimal Raylib viewport that can display flattened hard-face geometry.
 
@@ -37,8 +37,8 @@ The first milestone is not a full editor. It is a clean, testable foundation: C1
 
 ## Phase 2: Visual Loop
 
-- [ ] Split shader assets into named files under `shaders/`.
-- [ ] Add render config for background color, light direction, and hard-step threshold.
+- [x] Split shader assets into named files under `shaders/`.
+- [x] Add render config for background color, light direction, and hard-step threshold.
 - [ ] Add depth/normal render target plan.
 - [ ] Implement screen-space edge separation using depth and normal differences.
 - [ ] Capture viewport reference screenshots and compare them against `sample/` style checkpoints.
