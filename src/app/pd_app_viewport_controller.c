@@ -1,4 +1,6 @@
 #include "prismdraft/app/pd_app_lifecycle_controller.h"
+#include "prismdraft/core/pd_core_mesh_entity.h"
+#include "prismdraft/editor/pd_editor_pick_service.h"
 #include "prismdraft/engine/pd_engine_camera_controller.h"
 #include "prismdraft/engine/pd_engine_window_config.h"
 #include "prismdraft/render/pd_render_depth_shader.h"
@@ -15,10 +17,17 @@
 
 #include "raylib.h"
 
+#include <math.h>
 #include <stddef.h>
 #include <string.h>
 
 static const int PD_APP_VIEWPORT_CONTROLLER_RENDER_SCALE = 2;
+static const float PD_APP_VIEWPORT_CONTROLLER_ORBIT_SPEED = 0.01f;
+static const float PD_APP_VIEWPORT_CONTROLLER_MIN_CAMERA_PITCH = -1.2f;
+static const float PD_APP_VIEWPORT_CONTROLLER_MAX_CAMERA_PITCH = 1.2f;
+static const float PD_APP_VIEWPORT_CONTROLLER_MIN_CAMERA_FOVY = 1.8f;
+static const float PD_APP_VIEWPORT_CONTROLLER_MAX_CAMERA_FOVY = 8.0f;
+static const float PD_APP_VIEWPORT_CONTROLLER_ZOOM_SPEED = 0.28f;
 
 static int pd_app_viewport_controller_local_has_argument(int argc, char** argv, const char* expected_argument)
 {
@@ -35,6 +44,141 @@ static int pd_app_viewport_controller_local_has_argument(int argc, char** argv, 
     }
 
     return 0;
+}
+
+static float pd_app_viewport_controller_local_clamp(float value, float min_value, float max_value)
+{
+    if (value < min_value) {
+        return min_value;
+    }
+
+    if (value > max_value) {
+        return max_value;
+    }
+
+    return value;
+}
+
+static Vector3 pd_app_viewport_controller_local_add(Vector3 left, Vector3 right)
+{
+    return (Vector3){ left.x + right.x, left.y + right.y, left.z + right.z };
+}
+
+static Vector3 pd_app_viewport_controller_local_subtract(Vector3 left, Vector3 right)
+{
+    return (Vector3){ left.x - right.x, left.y - right.y, left.z - right.z };
+}
+
+static Vector3 pd_app_viewport_controller_local_scale(Vector3 value, float scale)
+{
+    return (Vector3){ value.x * scale, value.y * scale, value.z * scale };
+}
+
+static float pd_app_viewport_controller_local_length(Vector3 value)
+{
+    return sqrtf((value.x * value.x) + (value.y * value.y) + (value.z * value.z));
+}
+
+static Vector3 pd_app_viewport_controller_local_cross(Vector3 left, Vector3 right)
+{
+    return (Vector3){ (left.y * right.z) - (left.z * right.y),
+                      (left.z * right.x) - (left.x * right.z),
+                      (left.x * right.y) - (left.y * right.x) };
+}
+
+static Vector3 pd_app_viewport_controller_local_normalize(Vector3 value)
+{
+    float length = pd_app_viewport_controller_local_length(value);
+
+    if (length <= 0.000001f) {
+        return (Vector3){ 0.0f, 0.0f, 0.0f };
+    }
+
+    return pd_app_viewport_controller_local_scale(value, 1.0f / length);
+}
+
+static void pd_app_viewport_controller_local_orbit_camera(PdEngineCameraState* camera_state, Vector2 mouse_delta)
+{
+    Vector3 offset;
+    float radius;
+    float yaw;
+    float pitch;
+    float pitch_cosine;
+
+    if (camera_state == 0) {
+        return;
+    }
+
+    offset = pd_app_viewport_controller_local_subtract(camera_state->camera.position, camera_state->camera.target);
+    radius = pd_app_viewport_controller_local_length(offset);
+    if (radius <= 0.000001f) {
+        return;
+    }
+
+    yaw = atan2f(offset.z, offset.x) - (mouse_delta.x * PD_APP_VIEWPORT_CONTROLLER_ORBIT_SPEED);
+    pitch = asinf(offset.y / radius) + (mouse_delta.y * PD_APP_VIEWPORT_CONTROLLER_ORBIT_SPEED);
+    pitch = pd_app_viewport_controller_local_clamp(
+        pitch,
+        PD_APP_VIEWPORT_CONTROLLER_MIN_CAMERA_PITCH,
+        PD_APP_VIEWPORT_CONTROLLER_MAX_CAMERA_PITCH);
+    pitch_cosine = cosf(pitch);
+
+    camera_state->camera.position.x = camera_state->camera.target.x + (radius * pitch_cosine * cosf(yaw));
+    camera_state->camera.position.y = camera_state->camera.target.y + (radius * sinf(pitch));
+    camera_state->camera.position.z = camera_state->camera.target.z + (radius * pitch_cosine * sinf(yaw));
+}
+
+static void pd_app_viewport_controller_local_pan_camera(PdEngineCameraState* camera_state, Vector2 mouse_delta)
+{
+    Vector3 forward;
+    Vector3 right;
+    Vector3 up;
+    Vector3 pan_delta;
+    float pan_scale;
+
+    if (camera_state == 0 || GetScreenHeight() <= 0) {
+        return;
+    }
+
+    forward = pd_app_viewport_controller_local_normalize(
+        pd_app_viewport_controller_local_subtract(camera_state->camera.target, camera_state->camera.position));
+    right = pd_app_viewport_controller_local_normalize(
+        pd_app_viewport_controller_local_cross(forward, camera_state->camera.up));
+    up = pd_app_viewport_controller_local_normalize(pd_app_viewport_controller_local_cross(right, forward));
+    pan_scale = camera_state->camera.fovy / (float)GetScreenHeight();
+    pan_delta = pd_app_viewport_controller_local_add(
+        pd_app_viewport_controller_local_scale(right, -mouse_delta.x * pan_scale),
+        pd_app_viewport_controller_local_scale(up, mouse_delta.y * pan_scale));
+
+    camera_state->camera.position = pd_app_viewport_controller_local_add(camera_state->camera.position, pan_delta);
+    camera_state->camera.target = pd_app_viewport_controller_local_add(camera_state->camera.target, pan_delta);
+}
+
+static void pd_app_viewport_controller_local_zoom_camera(PdEngineCameraState* camera_state, float mouse_wheel_move)
+{
+    if (camera_state == 0 || mouse_wheel_move == 0.0f) {
+        return;
+    }
+
+    camera_state->camera.fovy = pd_app_viewport_controller_local_clamp(
+        camera_state->camera.fovy - (mouse_wheel_move * PD_APP_VIEWPORT_CONTROLLER_ZOOM_SPEED),
+        PD_APP_VIEWPORT_CONTROLLER_MIN_CAMERA_FOVY,
+        PD_APP_VIEWPORT_CONTROLLER_MAX_CAMERA_FOVY);
+}
+
+static void pd_app_viewport_controller_local_update_camera(PdEngineCameraState* camera_state)
+{
+    Vector2 mouse_delta = GetMouseDelta();
+
+    if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+        pd_app_viewport_controller_local_orbit_camera(camera_state, mouse_delta);
+    }
+
+    if (IsMouseButtonDown(MOUSE_BUTTON_MIDDLE)) {
+        pd_app_viewport_controller_local_pan_camera(camera_state, mouse_delta);
+    }
+
+    pd_app_viewport_controller_local_zoom_camera(camera_state, GetMouseWheelMove());
 }
 
 static Mesh pd_app_viewport_controller_local_make_mesh(const PdRenderMeshBuffer* render_mesh_buffer)
@@ -130,6 +274,7 @@ static void pd_app_viewport_controller_local_render_targets(
     PdRenderShadowConfig shadow_config,
     Model* cube_model,
     Model* face_highlight_model,
+    int has_face_highlight_model,
     Shader hardstep_shader,
     Shader depth_shader,
     Shader normal_shader)
@@ -145,9 +290,12 @@ static void pd_app_viewport_controller_local_render_targets(
     BeginMode3D(camera_state.camera);
     pd_app_viewport_controller_local_draw_shadow(shadow_config);
     DrawModel(*cube_model, origin, 1.0f, WHITE);
-    BeginBlendMode(BLEND_ALPHA);
-    DrawModel(*face_highlight_model, origin, 1.0f, WHITE);
-    EndBlendMode();
+    if (has_face_highlight_model) {
+        face_highlight_model->materials[0].shader = hardstep_shader;
+        BeginBlendMode(BLEND_ALPHA);
+        DrawModel(*face_highlight_model, origin, 1.0f, WHITE);
+        EndBlendMode();
+    }
     EndMode3D();
     EndTextureMode();
 
@@ -168,6 +316,104 @@ static void pd_app_viewport_controller_local_render_targets(
     EndTextureMode();
 }
 
+static void pd_app_viewport_controller_local_unload_face_highlight_model(
+    Model* face_highlight_model,
+    int* has_face_highlight_model)
+{
+    if (face_highlight_model == 0 || has_face_highlight_model == 0 || !*has_face_highlight_model) {
+        return;
+    }
+
+    face_highlight_model->materials[0].shader = (Shader){ 0 };
+    UnloadModel(*face_highlight_model);
+    *face_highlight_model = (Model){ 0 };
+    *has_face_highlight_model = 0;
+}
+
+static PdCoreResult pd_app_viewport_controller_local_rebuild_face_highlight(
+    PdRenderMeshBuffer* face_highlight_buffer,
+    Model* face_highlight_model,
+    int* has_face_highlight_model,
+    const PdCoreMeshEntity* mesh_entity,
+    uint32_t face_index,
+    PdRenderFaceHighlightConfig face_highlight_config)
+{
+    Mesh face_highlight_mesh;
+
+    if (face_highlight_buffer == 0 || face_highlight_model == 0 || has_face_highlight_model == 0 ||
+        mesh_entity == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    pd_app_viewport_controller_local_unload_face_highlight_model(face_highlight_model, has_face_highlight_model);
+    pd_render_mesh_buffer_free(face_highlight_buffer);
+    if (face_index == PD_CORE_MESH_ENTITY_INVALID_INDEX) {
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (pd_render_face_highlight_buffer_build_for_face(
+            face_highlight_buffer,
+            mesh_entity,
+            face_index,
+            face_highlight_config) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    face_highlight_mesh = pd_app_viewport_controller_local_make_mesh(face_highlight_buffer);
+    *face_highlight_model = LoadModelFromMesh(face_highlight_mesh);
+    *has_face_highlight_model = 1;
+    return PD_CORE_RESULT_OK;
+}
+
+static PdCoreResult pd_app_viewport_controller_local_pick_face(
+    PdAppContextEntity* app_context,
+    PdRenderMeshBuffer* face_highlight_buffer,
+    Model* face_highlight_model,
+    int* has_face_highlight_model,
+    PdRenderFaceHighlightConfig face_highlight_config,
+    Camera3D camera)
+{
+    Ray mouse_ray;
+    PdEditorPickServiceHit hit;
+    float ray_origin[3];
+    float ray_direction[3];
+    uint32_t face_index = PD_CORE_MESH_ENTITY_INVALID_INDEX;
+
+    if (app_context == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    mouse_ray = GetMouseRay(GetMousePosition(), camera);
+    ray_origin[0] = mouse_ray.position.x;
+    ray_origin[1] = mouse_ray.position.y;
+    ray_origin[2] = mouse_ray.position.z;
+    ray_direction[0] = mouse_ray.direction.x;
+    ray_direction[1] = mouse_ray.direction.y;
+    ray_direction[2] = mouse_ray.direction.z;
+
+    if (pd_editor_pick_service_pick_face(&app_context->active_mesh, ray_origin, ray_direction, &hit) !=
+        PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (hit.has_hit) {
+        face_index = hit.face_index;
+        if (pd_editor_selection_state_select_face(&app_context->selection_state, face_index) != PD_CORE_RESULT_OK) {
+            return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+        }
+    } else {
+        pd_editor_selection_state_clear(&app_context->selection_state);
+    }
+
+    return pd_app_viewport_controller_local_rebuild_face_highlight(
+        face_highlight_buffer,
+        face_highlight_model,
+        has_face_highlight_model,
+        &app_context->active_mesh,
+        face_index,
+        face_highlight_config);
+}
+
 int main(int argc, char** argv)
 {
     PdAppContextEntity app_context;
@@ -184,7 +430,6 @@ int main(int argc, char** argv)
     PdRenderMeshBuffer render_mesh_buffer = { 0 };
     PdRenderMeshBuffer face_highlight_buffer = { 0 };
     Mesh cube_mesh;
-    Mesh face_highlight_mesh = { 0 };
     Model cube_model;
     Model face_highlight_model = { 0 };
     Shader hardstep_shader;
@@ -203,6 +448,7 @@ int main(int argc, char** argv)
     Rectangle screen_destination;
     Vector2 screen_position = { 0.0f, 0.0f };
     int is_interactive = pd_app_viewport_controller_local_has_argument(argc, argv, "--interactive");
+    int has_face_highlight_model = 0;
     int run_result = 0;
 
     if (pd_app_lifecycle_controller_init(&app_context) != PD_CORE_RESULT_OK) {
@@ -215,16 +461,6 @@ int main(int argc, char** argv)
     }
 
     if (pd_editor_selection_state_select_face(&app_context.selection_state, 1u) != PD_CORE_RESULT_OK) {
-        pd_render_mesh_buffer_free(&render_mesh_buffer);
-        pd_app_lifecycle_controller_shutdown(&app_context);
-        return 1;
-    }
-
-    if (pd_render_face_highlight_buffer_build_for_face(
-            &face_highlight_buffer,
-            &app_context.active_mesh,
-            app_context.selection_state.primary_index,
-            face_highlight_config) != PD_CORE_RESULT_OK) {
         pd_render_mesh_buffer_free(&render_mesh_buffer);
         pd_app_lifecycle_controller_shutdown(&app_context);
         return 1;
@@ -267,12 +503,43 @@ int main(int argc, char** argv)
 
     cube_mesh = pd_app_viewport_controller_local_make_mesh(&render_mesh_buffer);
     cube_model = LoadModelFromMesh(cube_mesh);
-    face_highlight_mesh = pd_app_viewport_controller_local_make_mesh(&face_highlight_buffer);
-    face_highlight_model = LoadModelFromMesh(face_highlight_mesh);
+    if (pd_app_viewport_controller_local_rebuild_face_highlight(
+            &face_highlight_buffer,
+            &face_highlight_model,
+            &has_face_highlight_model,
+            &app_context.active_mesh,
+            app_context.selection_state.primary_index,
+            face_highlight_config) != PD_CORE_RESULT_OK) {
+        UnloadModel(cube_model);
+        UnloadShader(edge_shader);
+        UnloadShader(normal_shader);
+        UnloadShader(depth_shader);
+        UnloadShader(hardstep_shader);
+        pd_render_target_controller_free(&target_controller);
+        CloseWindow();
+        pd_render_mesh_buffer_free(&render_mesh_buffer);
+        pd_app_lifecycle_controller_shutdown(&app_context);
+        return 1;
+    }
 
     do {
         int screen_width = GetScreenWidth();
         int screen_height = GetScreenHeight();
+
+        if (is_interactive) {
+            pd_app_viewport_controller_local_update_camera(&camera_state);
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
+                pd_app_viewport_controller_local_pick_face(
+                    &app_context,
+                    &face_highlight_buffer,
+                    &face_highlight_model,
+                    &has_face_highlight_model,
+                    face_highlight_config,
+                    camera_state.camera) != PD_CORE_RESULT_OK) {
+                run_result = 1;
+                break;
+            }
+        }
 
         if (pd_app_viewport_controller_local_resize_targets(
                 &target_controller,
@@ -292,6 +559,7 @@ int main(int argc, char** argv)
             shadow_config,
             &cube_model,
             &face_highlight_model,
+            has_face_highlight_model,
             hardstep_shader,
             depth_shader,
             normal_shader);
@@ -323,8 +591,7 @@ int main(int argc, char** argv)
     }
 
     cube_model.materials[0].shader = (Shader){ 0 };
-    face_highlight_model.materials[0].shader = (Shader){ 0 };
-    UnloadModel(face_highlight_model);
+    pd_app_viewport_controller_local_unload_face_highlight_model(&face_highlight_model, &has_face_highlight_model);
     UnloadModel(cube_model);
     UnloadShader(edge_shader);
     UnloadShader(normal_shader);

@@ -72,8 +72,8 @@ The current milestone is turning the proven data/render/export pieces into a use
 - [x] Fix edge compositing so silhouette and crease lines read as outer/structural boundaries instead of face-overpaint artifacts.
 - [x] Add anti-aliasing for diagonal face boundaries, edge overlay, and hard projected shadow.
 - [x] Re-run visual comparison against `sample/` after edge alignment and anti-aliasing changes.
-- [ ] Add camera orbit, pan, and zoom controls for inspecting the model.
-- [ ] Add an interactive editor smoke mode for face picking and selection feedback.
+- [x] Add camera orbit, pan, and zoom controls for inspecting the model.
+- [x] Add an interactive editor smoke mode for face picking and selection feedback.
 
 ### Phase 5 Implementation Order
 

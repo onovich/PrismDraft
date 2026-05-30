@@ -92,3 +92,24 @@ Current comparison:
 - Pass: The edge shader uses an 8-neighbor smooth edge mask instead of binary four-neighbor `step`, reducing stair-step artifacts and hard overpaint.
 - Pass: The output preserves flat poster-like surfaces, hard geometric silhouette, and the designed shadow shape from the visual references.
 - Watch: Edge placement should be re-checked by the user in the interactive smoke, especially at the center vertical crease and high-contrast face boundaries.
+
+## Phase 5 Interaction Smoke
+
+Interactive command:
+
+```powershell
+tools\SmokeViewportInteractive.cmd
+```
+
+Controls:
+
+- Right mouse drag: orbit camera around the model.
+- Middle mouse drag: pan camera target and position.
+- Mouse wheel: zoom the orthographic camera.
+- Left click: pick a cube face and rebuild selected-face highlight.
+
+Current comparison:
+
+- Pass: The interaction layer uses existing `editor` face picking and render face highlight buffers instead of duplicating business logic in the app layer.
+- Pass: The default screenshot smoke remains non-interactive and still exits after rendering `captures/phase2_cube.png`.
+- Watch: User-facing tool UI and explicit transform/color/lighting controls are still Phase 6 work.
