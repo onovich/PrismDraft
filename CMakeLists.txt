@@ -88,6 +88,7 @@ add_library(prismdraft_render STATIC
   src/render/pd_render_hardstep_shader.c
   src/render/pd_render_mesh_buffer.c
   src/render/pd_render_normal_shader.c
+  src/render/pd_render_shadow_config.c
   src/render/pd_render_target_config.c
   src/render/pd_render_target_controller.c
   src/render/pd_render_visual_config.c
@@ -408,6 +409,26 @@ endif()
 add_test(
   NAME pd_render_depth_shader_test
   COMMAND pd_render_depth_shader_test
+)
+
+add_executable(pd_render_shadow_config_test
+  tests/render/pd_render_shadow_config_test.c
+)
+
+target_link_libraries(pd_render_shadow_config_test
+  PRIVATE
+    prismdraft_render
+)
+
+if(MSVC)
+  target_compile_options(pd_render_shadow_config_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_render_shadow_config_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_render_shadow_config_test
+  COMMAND pd_render_shadow_config_test
 )
 
 add_executable(pd_render_normal_shader_test

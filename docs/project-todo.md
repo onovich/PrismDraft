@@ -4,9 +4,9 @@ This TODO translates the design mirror and visual references into small Codex-si
 
 ## Current Focus
 
-Phase 2: Visual loop.
+Phase 3: Modeling tools.
 
-The first milestone is not a full editor. It is a clean, testable foundation: C11 data types, indexed mesh storage, deterministic cube fixture, and a minimal Raylib viewport that can display flattened hard-face geometry.
+The current milestone is the first editable loop: selection state, picking, face highlighting, and tightly validated hard-surface topology operations.
 
 ## Phase 0: Preparation
 
@@ -43,7 +43,7 @@ The first milestone is not a full editor. It is a clean, testable foundation: C1
 - [x] Implement screen-space edge separation using depth and normal differences.
 - [x] Capture viewport reference screenshots and compare them against `sample/` style checkpoints.
 - [x] Composite edge separation into the viewport screenshot path.
-- [ ] Add a hard projected shadow or shadow-like graphic pass for stronger sample alignment.
+- [x] Add a hard projected shadow or shadow-like graphic pass for stronger sample alignment.
 
 ## Phase 3: Modeling Tools
 

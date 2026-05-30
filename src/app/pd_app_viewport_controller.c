@@ -6,6 +6,7 @@
 #include "prismdraft/render/pd_render_hardstep_shader.h"
 #include "prismdraft/render/pd_render_mesh_buffer.h"
 #include "prismdraft/render/pd_render_normal_shader.h"
+#include "prismdraft/render/pd_render_shadow_config.h"
 #include "prismdraft/render/pd_render_target_config.h"
 #include "prismdraft/render/pd_render_target_controller.h"
 #include "prismdraft/render/pd_render_visual_config.h"
@@ -43,12 +44,34 @@ static Mesh pd_app_viewport_controller_local_make_mesh(const PdRenderMeshBuffer*
     return mesh;
 }
 
+static void pd_app_viewport_controller_local_draw_shadow(PdRenderShadowConfig shadow_config)
+{
+    Vector3 near_left = { -shadow_config.half_width + shadow_config.offset_x,
+                          shadow_config.plane_y,
+                          -shadow_config.half_depth + shadow_config.offset_z };
+    Vector3 near_right = { shadow_config.half_width + shadow_config.offset_x,
+                           shadow_config.plane_y,
+                           -shadow_config.half_depth + shadow_config.offset_z };
+    Vector3 far_right = { shadow_config.half_width + shadow_config.offset_x + shadow_config.skew_x,
+                          shadow_config.plane_y,
+                          shadow_config.half_depth + shadow_config.offset_z };
+    Vector3 far_left = { -shadow_config.half_width + shadow_config.offset_x + shadow_config.skew_x,
+                         shadow_config.plane_y,
+                         shadow_config.half_depth + shadow_config.offset_z };
+
+    BeginBlendMode(BLEND_ALPHA);
+    DrawTriangle3D(near_left, far_left, far_right, shadow_config.color);
+    DrawTriangle3D(near_left, far_right, near_right, shadow_config.color);
+    EndBlendMode();
+}
+
 int main(void)
 {
     PdAppContextEntity app_context;
     PdEngineWindowConfig window_config = pd_engine_window_config_default();
     PdEngineCameraState camera_state = pd_engine_camera_controller_make_default();
     PdRenderVisualConfig visual_config = pd_render_visual_config_default();
+    PdRenderShadowConfig shadow_config = pd_render_shadow_config_default();
     PdRenderHardstepShaderConfig shader_config = pd_render_hardstep_shader_config_default();
     PdRenderDepthShaderConfig depth_shader_config = pd_render_depth_shader_config_default();
     PdRenderNormalShaderConfig normal_shader_config = pd_render_normal_shader_config_default();
@@ -125,6 +148,7 @@ int main(void)
     BeginTextureMode(target_controller.color_depth_target);
     ClearBackground(visual_config.background_color);
     BeginMode3D(camera_state.camera);
+    pd_app_viewport_controller_local_draw_shadow(shadow_config);
     DrawModel(cube_model, origin, 1.0f, WHITE);
     EndMode3D();
     EndTextureMode();

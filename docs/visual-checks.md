@@ -24,8 +24,8 @@ Current comparison:
 - Pass: Vertex/base-color-style surfaces with no texture, UV, or PBR detail.
 - Pass: Hard face separation from face normals and hard-step lighting.
 - Pass: Visible screen-space edge overlay composited from depth and normal render targets.
-- Pending: Designed projected shadows like `sample/sample2.png` and `sample/sample4.png`.
+- Pass: Designed hard projected shadow similar to `sample/sample2.png` and `sample/sample4.png`.
 
 Next visual target:
 
-- Add a simple planar shadow or shadow-like hard projection that matches the sample images without introducing soft physically realistic lighting.
+- Move into Phase 3 modeling checks while keeping the current screenshot as the baseline for flat color, hard edges, and designed shadow behavior.
