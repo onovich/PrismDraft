@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 static const int PD_APP_VIEWPORT_CONTROLLER_RENDER_SCALE = 2;
@@ -570,6 +571,96 @@ static PdCoreResult pd_app_viewport_controller_local_update_visual_controls(
     return PD_CORE_RESULT_OK;
 }
 
+static void pd_app_viewport_controller_local_draw_overlay_line(const char* text, int* y)
+{
+    if (text == 0 || y == 0) {
+        return;
+    }
+
+    DrawText(text, 20, *y, 10, (Color){ 236u, 240u, 244u, 235u });
+    *y += 14;
+}
+
+static void pd_app_viewport_controller_local_draw_overlay(
+    const PdAppContextEntity* app_context,
+    PdRenderVisualConfig visual_config,
+    PdRenderShadowConfig shadow_config)
+{
+    char line[128];
+    int y = 20;
+    const PdEditorTransformState* transform_state;
+
+    if (app_context == 0) {
+        return;
+    }
+
+    transform_state = &app_context->transform_state;
+    DrawRectangle(12, 12, 372, 156, (Color){ 20u, 23u, 28u, 168u });
+    DrawRectangleLines(12, 12, 372, 156, (Color){ 245u, 245u, 245u, 64u });
+
+    if (app_context->selection_state.kind == PD_EDITOR_SELECTION_KIND_FACE) {
+        (void)snprintf(
+            line,
+            sizeof(line),
+            "selection face=%u",
+            (unsigned int)app_context->selection_state.primary_index);
+    } else {
+        (void)snprintf(line, sizeof(line), "selection none");
+    }
+    pd_app_viewport_controller_local_draw_overlay_line(line, &y);
+
+    (void)snprintf(
+        line,
+        sizeof(line),
+        "pos %.2f %.2f %.2f  rotY %.1f  scale %.2f",
+        transform_state->position[0],
+        transform_state->position[1],
+        transform_state->position[2],
+        transform_state->rotation_degrees[1],
+        transform_state->scale[0]);
+    pd_app_viewport_controller_local_draw_overlay_line(line, &y);
+
+    (void)snprintf(
+        line,
+        sizeof(line),
+        "face rgb %u %u %u  bg rgb %u %u %u",
+        app_context->visual_state.face_color[0],
+        app_context->visual_state.face_color[1],
+        app_context->visual_state.face_color[2],
+        app_context->visual_state.background_color[0],
+        app_context->visual_state.background_color[1],
+        app_context->visual_state.background_color[2]);
+    pd_app_viewport_controller_local_draw_overlay_line(line, &y);
+
+    (void)snprintf(
+        line,
+        sizeof(line),
+        "edge radius %.2f  depth %.4f  normal %.3f",
+        visual_config.edge_sample_radius,
+        visual_config.edge_depth_threshold,
+        visual_config.edge_normal_threshold);
+    pd_app_viewport_controller_local_draw_overlay_line(line, &y);
+
+    (void)snprintf(
+        line,
+        sizeof(line),
+        "light %.2f %.2f %.2f  dark %.2f",
+        visual_config.light_direction.x,
+        visual_config.light_direction.y,
+        visual_config.light_direction.z,
+        visual_config.dark_intensity);
+    pd_app_viewport_controller_local_draw_overlay_line(line, &y);
+
+    (void)snprintf(
+        line,
+        sizeof(line),
+        "shadow alpha %u  offset %.2f %.2f",
+        shadow_config.color.a,
+        shadow_config.offset_x,
+        shadow_config.offset_z);
+    pd_app_viewport_controller_local_draw_overlay_line(line, &y);
+}
+
 static void pd_app_viewport_controller_local_draw_shadow(PdRenderShadowConfig shadow_config)
 {
     Vector3 near_left = { -shadow_config.half_width + shadow_config.offset_x,
@@ -1007,6 +1098,9 @@ int main(int argc, char** argv)
             0.0f,
             WHITE);
         EndShaderMode();
+        if (is_interactive) {
+            pd_app_viewport_controller_local_draw_overlay(&app_context, visual_config, shadow_config);
+        }
         EndDrawing();
     } while (is_interactive && !WindowShouldClose());
 

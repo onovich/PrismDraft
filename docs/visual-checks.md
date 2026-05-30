@@ -133,5 +133,6 @@ Current comparison:
 - Pass: The interaction layer uses existing `editor` face picking and render face highlight buffers instead of duplicating business logic in the app layer.
 - Pass: The default screenshot smoke remains non-interactive and still exits after rendering `captures/phase2_cube.png`.
 - Pass: Face color, background color, outline thickness, edge thresholds, light direction, dark intensity, shadow strength, and shadow offset are editable through keyboard controls.
-- Watch: User-facing overlay and modeling command shortcuts are still Phase 6 work.
+- Pass: Interactive mode draws a compact state overlay for selection, transform, color, outline, lighting, and shadow values without changing the automated screenshot baseline.
+- Watch: Modeling command shortcuts are still Phase 6 work.
 - Watch: The user still needs to manually re-check edge placement and anti-aliasing in the interactive viewport after the Phase 5 render pass.
