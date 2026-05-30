@@ -12,6 +12,41 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 enable_testing()
 
+add_library(prismdraft_core STATIC
+  src/core/pd_core_result_entity.c
+)
+
+target_include_directories(prismdraft_core
+  PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+if(MSVC)
+  target_compile_options(prismdraft_core PRIVATE /W4 /WX)
+else()
+  target_compile_options(prismdraft_core PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_executable(pd_core_result_test
+  tests/core/pd_core_result_test.c
+)
+
+target_link_libraries(pd_core_result_test
+  PRIVATE
+    prismdraft_core
+)
+
+if(MSVC)
+  target_compile_options(pd_core_result_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_core_result_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_core_result_test
+  COMMAND pd_core_result_test
+)
+
 add_test(
   NAME prismdraft_architecture_check
   COMMAND powershell -NoProfile -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/tools/CheckArchitecture.ps1

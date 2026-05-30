@@ -21,7 +21,7 @@ The first milestone is not a full editor. It is a clean, testable foundation: C1
 
 ## Phase 1: Memory Skeleton And Viewport
 
-- [ ] Define core result/status types.
+- [x] Define core result/status types.
 - [ ] Define `PdCoreMeshEntity`, `PdCoreVertexEntity`, `PdCoreHalfEdgeEntity`, and `PdCoreFaceEntity`.
 - [ ] Define mesh storage config and explicit count/capacity ownership rules.
 - [ ] Implement mesh init/free/reserve routines.
