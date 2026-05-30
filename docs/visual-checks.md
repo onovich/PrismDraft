@@ -172,3 +172,29 @@ tools\SmokeTimeline.cmd
 Current comparison:
 
 - Pass: The smoke initializes the app context, samples a two-keyframe PRS timeline at the midpoint, and applies the sampled pose to the app transform state.
+
+## Phase 5-6 Completion Audit: 2026-05-31
+
+Commands:
+
+```powershell
+C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd
+C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Smoke.cmd
+tools\SmokeViewportLifecycle.cmd
+```
+
+Artifacts:
+
+```text
+captures/phase2_cube.png
+captures/phase6_export_smoke.gltf
+captures/phase6_export_smoke.glb
+```
+
+Current comparison:
+
+- Pass: `captures/phase2_cube.png` was re-opened after the latest smoke run and checked against the `sample/` style notes.
+- Pass: Silhouette and crease edges read as structural boundaries instead of obvious face-overpaint artifacts.
+- Pass: Diagonal face boundaries, edge overlay, and hard projected shadow show anti-aliased edges through the 2x internal render target and smoothed edge shader sampling.
+- Pass: Lifecycle smoke verifies that the interactive viewport process exits after a close message.
+- Pass: Project smoke now covers viewport screenshot, edited-mesh export, and timeline demo paths.

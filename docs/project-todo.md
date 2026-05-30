@@ -14,8 +14,8 @@ These items track the issues and expected controls from manual smoke. Do not rem
 
 - [x] Verify the viewport process exits after the window is closed.
 - [x] Make the viewport window resizable and recreate render targets on resize.
-- [ ] Re-check edge compositing so silhouettes and crease lines read as structural boundaries, not face-overpaint artifacts.
-- [ ] Re-check anti-aliasing for diagonal face boundaries, diagonal edge overlay, and hard projected shadow.
+- [x] Re-check edge compositing so silhouettes and crease lines read as structural boundaries, not face-overpaint artifacts.
+- [x] Re-check anti-aliasing for diagonal face boundaries, diagonal edge overlay, and hard projected shadow.
 - [x] Add camera orbit, pan, and zoom for inspection.
 - [x] Add face selection feedback through the editor picking path.
 - [x] Add object move, rotate, scale, and reset controls.
@@ -131,9 +131,9 @@ These items track the issues and expected controls from manual smoke. Do not rem
 
 ## Always-On Checks
 
-- [ ] File names match `pd_<layer>_<business>_<role>`.
-- [ ] Public symbols match their file prefix.
-- [ ] `core` has no Raylib, OpenGL, UI, or app dependency.
-- [ ] Mesh topology mutations include proof comments and validator calls.
-- [ ] Rendering changes are compared with [docs/visual-reference.md](visual-reference.md).
-- [ ] Each small transaction is committed and pushed before moving on.
+- [x] File names match `pd_<layer>_<business>_<role>`.
+- [x] Public symbols match their file prefix.
+- [x] `core` has no Raylib, OpenGL, UI, or app dependency.
+- [x] Mesh topology mutations include proof comments and validator calls.
+- [x] Rendering changes are compared with [docs/visual-reference.md](visual-reference.md).
+- [x] Each small transaction is committed and pushed before moving on.
