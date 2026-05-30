@@ -19,10 +19,10 @@ These items track the issues and expected controls from manual smoke. Do not rem
 - [x] Add camera orbit, pan, and zoom for inspection.
 - [x] Add face selection feedback through the editor picking path.
 - [x] Add object move, rotate, scale, and reset controls.
-- [ ] Add face color adjustment controls.
-- [ ] Add background color adjustment controls.
-- [ ] Add outline thickness and edge-threshold adjustment controls.
-- [ ] Add lighting controls for light direction, dark intensity, shadow strength, and shadow offset.
+- [x] Add face color adjustment controls.
+- [x] Add background color adjustment controls.
+- [x] Add outline thickness and edge-threshold adjustment controls.
+- [x] Add lighting controls for light direction, dark intensity, shadow strength, and shadow offset.
 - [ ] Add a compact overlay that exposes current selection, transform, color, outline, and lighting values.
 - [ ] Wire modeling commands into interactive smoke: inset, extrude, bevel, and loop cut.
 - [ ] Add app-level glTF and GLB export smoke from the edited mesh.
@@ -109,10 +109,10 @@ These items track the issues and expected controls from manual smoke. Do not rem
 - [x] Add object transform state for move, rotate, and scale.
 - [x] Add transform controls or keyboard shortcuts for move, rotate, and scale.
 - [ ] Add keyboard or tool commands in the editor smoke for inset, extrude, bevel, and loop cut.
-- [ ] Add editable face color state and a simple face color adjustment control.
-- [ ] Add editable background color state and a simple background color adjustment control.
-- [ ] Add editable outline style config, including outline thickness and edge threshold controls.
-- [ ] Add editable lighting config, including light direction, dark intensity, shadow strength, and shadow offset controls.
+- [x] Add editable face color state and a simple face color adjustment control.
+- [x] Add editable background color state and a simple background color adjustment control.
+- [x] Add editable outline style config, including outline thickness and edge threshold controls.
+- [x] Add editable lighting config, including light direction, dark intensity, shadow strength, and shadow offset controls.
 - [ ] Add a compact on-screen debug/control overlay for current tool, selection, and visual parameters.
 - [ ] Add an app-level export smoke path for glTF and GLB from the current mesh.
 - [ ] Add a minimal app-level timeline demo that applies PRS animation to an object.

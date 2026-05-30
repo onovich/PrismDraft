@@ -117,10 +117,21 @@ Controls:
 - `R` / `F`: rotate the object around Y.
 - `Z` / `X`: scale the object down or up.
 - `T`: reset object transform.
+- `C`: cycle the selected face color and rebuild the viewport mesh.
+- `B`: cycle the background color.
+- `[` / `]`: decrease or increase edge sample radius for outline thickness.
+- `-` / `=`: decrease or increase depth edge threshold.
+- `;` / `'`: decrease or increase normal edge threshold.
+- `U` / `I`: decrease or increase dark-side lighting intensity.
+- Arrow keys: adjust light direction.
+- `O` / `P`: decrease or increase shadow strength.
+- `K` / `L`: move the shadow left or right.
+- `N` / `M`: move the shadow backward or forward.
 
 Current comparison:
 
 - Pass: The interaction layer uses existing `editor` face picking and render face highlight buffers instead of duplicating business logic in the app layer.
 - Pass: The default screenshot smoke remains non-interactive and still exits after rendering `captures/phase2_cube.png`.
-- Watch: User-facing tool UI and explicit color, outline, and lighting controls are still Phase 6 work.
+- Pass: Face color, background color, outline thickness, edge thresholds, light direction, dark intensity, shadow strength, and shadow offset are editable through keyboard controls.
+- Watch: User-facing overlay and modeling command shortcuts are still Phase 6 work.
 - Watch: The user still needs to manually re-check edge placement and anti-aliasing in the interactive viewport after the Phase 5 render pass.

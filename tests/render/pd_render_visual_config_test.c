@@ -14,6 +14,7 @@ int main(void)
     assert(config.light_direction.y == -0.75f);
     assert(config.light_direction.z == -0.5f);
     assert(config.dark_intensity == 0.35f);
+    assert(config.edge_sample_radius == 1.0f);
     assert(config.edge_depth_threshold > 0.0f);
     assert(config.edge_normal_threshold > 0.0f);
 

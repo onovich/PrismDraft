@@ -7,6 +7,7 @@ typedef struct PdRenderVisualConfig {
     Color background_color;
     Vector3 light_direction;
     float dark_intensity;
+    float edge_sample_radius;
     float edge_depth_threshold;
     float edge_normal_threshold;
 } PdRenderVisualConfig;

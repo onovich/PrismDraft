@@ -12,6 +12,7 @@ int main(void)
 
     assert(strcmp(edge_config.vertex_shader_path, "shaders/pd_render_edge_shader.vert") == 0);
     assert(strcmp(edge_config.fragment_shader_path, "shaders/pd_render_edge_shader.frag") == 0);
+    assert(edge_config.edge_sample_radius == visual_config.edge_sample_radius);
     assert(edge_config.edge_depth_threshold == visual_config.edge_depth_threshold);
     assert(edge_config.edge_normal_threshold == visual_config.edge_normal_threshold);
 

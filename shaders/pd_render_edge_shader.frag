@@ -6,6 +6,7 @@ uniform sampler2D texture0;
 uniform sampler2D normalTexture;
 uniform sampler2D depthTexture;
 uniform vec2 texelSize;
+uniform float edgeSampleRadius;
 uniform float edgeDepthThreshold;
 uniform float edgeNormalThreshold;
 
@@ -13,12 +14,12 @@ out vec4 finalColor;
 
 float sampleDepth(vec2 offset)
 {
-    return texture(depthTexture, fragTexCoord + offset * texelSize).r;
+    return texture(depthTexture, fragTexCoord + offset * texelSize * edgeSampleRadius).r;
 }
 
 vec3 sampleNormal(vec2 offset)
 {
-    return texture(normalTexture, fragTexCoord + offset * texelSize).xyz;
+    return texture(normalTexture, fragTexCoord + offset * texelSize * edgeSampleRadius).xyz;
 }
 
 void main()

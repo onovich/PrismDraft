@@ -4,6 +4,7 @@
 typedef struct PdRenderEdgeShaderConfig {
     const char* vertex_shader_path;
     const char* fragment_shader_path;
+    float edge_sample_radius;
     float edge_depth_threshold;
     float edge_normal_threshold;
 } PdRenderEdgeShaderConfig;

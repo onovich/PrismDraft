@@ -32,6 +32,13 @@ static const float PD_APP_VIEWPORT_CONTROLLER_ZOOM_SPEED = 0.28f;
 static const float PD_APP_VIEWPORT_CONTROLLER_MOVE_STEP = 0.035f;
 static const float PD_APP_VIEWPORT_CONTROLLER_ROTATE_STEP_DEGREES = 1.5f;
 static const float PD_APP_VIEWPORT_CONTROLLER_SCALE_STEP = 0.015f;
+static const float PD_APP_VIEWPORT_CONTROLLER_EDGE_SAMPLE_RADIUS_STEP = 0.25f;
+static const float PD_APP_VIEWPORT_CONTROLLER_EDGE_DEPTH_STEP = 0.0025f;
+static const float PD_APP_VIEWPORT_CONTROLLER_EDGE_NORMAL_STEP = 0.025f;
+static const float PD_APP_VIEWPORT_CONTROLLER_LIGHT_STEP = 0.04f;
+static const float PD_APP_VIEWPORT_CONTROLLER_DARK_INTENSITY_STEP = 0.03f;
+static const float PD_APP_VIEWPORT_CONTROLLER_SHADOW_OFFSET_STEP = 0.05f;
+static const int PD_APP_VIEWPORT_CONTROLLER_SHADOW_ALPHA_STEP = 12;
 
 static int pd_app_viewport_controller_local_has_argument(int argc, char** argv, const char* expected_argument)
 {
@@ -297,6 +304,7 @@ static PdRenderVisualConfig pd_app_viewport_controller_local_make_visual_config(
     visual_config.background_color = pd_app_viewport_controller_local_make_color(visual_state->background_color);
     visual_config.light_direction = pd_app_viewport_controller_local_make_vector3(visual_state->light_direction);
     visual_config.dark_intensity = visual_state->dark_intensity;
+    visual_config.edge_sample_radius = visual_state->edge_sample_radius;
     visual_config.edge_depth_threshold = visual_state->edge_depth_threshold;
     visual_config.edge_normal_threshold = visual_state->edge_normal_threshold;
     return visual_config;
@@ -348,6 +356,218 @@ static Mesh pd_app_viewport_controller_local_make_mesh(const PdRenderMeshBuffer*
 
     UploadMesh(&mesh, false);
     return mesh;
+}
+
+static PdCoreResult pd_app_viewport_controller_local_rebuild_cube_model(
+    PdRenderMeshBuffer* render_mesh_buffer,
+    Model* cube_model,
+    const PdCoreMeshEntity* mesh_entity)
+{
+    Mesh cube_mesh;
+
+    if (render_mesh_buffer == 0 || cube_model == 0 || mesh_entity == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    cube_model->materials[0].shader = (Shader){ 0 };
+    UnloadModel(*cube_model);
+    pd_render_mesh_buffer_free(render_mesh_buffer);
+    if (pd_render_mesh_buffer_build_from_mesh(render_mesh_buffer, mesh_entity) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    cube_mesh = pd_app_viewport_controller_local_make_mesh(render_mesh_buffer);
+    *cube_model = LoadModelFromMesh(cube_mesh);
+    return PD_CORE_RESULT_OK;
+}
+
+static PdCoreResult pd_app_viewport_controller_local_apply_selected_face_color(PdAppContextEntity* app_context)
+{
+    uint32_t face_index;
+
+    if (app_context == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (app_context->selection_state.kind != PD_EDITOR_SELECTION_KIND_FACE) {
+        return PD_CORE_RESULT_OK;
+    }
+
+    face_index = app_context->selection_state.primary_index;
+    if (face_index >= app_context->active_mesh.face_count) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    app_context->active_mesh.faces[face_index].base_color[0] = app_context->visual_state.face_color[0];
+    app_context->active_mesh.faces[face_index].base_color[1] = app_context->visual_state.face_color[1];
+    app_context->active_mesh.faces[face_index].base_color[2] = app_context->visual_state.face_color[2];
+    app_context->active_mesh.faces[face_index].base_color[3] = app_context->visual_state.face_color[3];
+    return PD_CORE_RESULT_OK;
+}
+
+static PdCoreResult pd_app_viewport_controller_local_update_visual_controls(
+    PdAppContextEntity* app_context,
+    int* needs_cube_model_rebuild)
+{
+    if (app_context == 0 || needs_cube_model_rebuild == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    *needs_cube_model_rebuild = 0;
+
+    if (IsKeyPressed(KEY_C)) {
+        if (pd_editor_visual_state_cycle_face_color(&app_context->visual_state, 1) != PD_CORE_RESULT_OK ||
+            pd_app_viewport_controller_local_apply_selected_face_color(app_context) != PD_CORE_RESULT_OK) {
+            return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+        }
+
+        *needs_cube_model_rebuild = 1;
+    }
+
+    if (IsKeyPressed(KEY_B) &&
+        pd_editor_visual_state_cycle_background_color(&app_context->visual_state, 1) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_LEFT_BRACKET) &&
+        pd_editor_visual_state_adjust_edge_sample_radius(
+            &app_context->visual_state,
+            -PD_APP_VIEWPORT_CONTROLLER_EDGE_SAMPLE_RADIUS_STEP) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_RIGHT_BRACKET) &&
+        pd_editor_visual_state_adjust_edge_sample_radius(
+            &app_context->visual_state,
+            PD_APP_VIEWPORT_CONTROLLER_EDGE_SAMPLE_RADIUS_STEP) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_MINUS) &&
+        pd_editor_visual_state_adjust_edge_depth_threshold(
+            &app_context->visual_state,
+            -PD_APP_VIEWPORT_CONTROLLER_EDGE_DEPTH_STEP) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_EQUAL) &&
+        pd_editor_visual_state_adjust_edge_depth_threshold(
+            &app_context->visual_state,
+            PD_APP_VIEWPORT_CONTROLLER_EDGE_DEPTH_STEP) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_SEMICOLON) &&
+        pd_editor_visual_state_adjust_edge_normal_threshold(
+            &app_context->visual_state,
+            -PD_APP_VIEWPORT_CONTROLLER_EDGE_NORMAL_STEP) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_APOSTROPHE) &&
+        pd_editor_visual_state_adjust_edge_normal_threshold(
+            &app_context->visual_state,
+            PD_APP_VIEWPORT_CONTROLLER_EDGE_NORMAL_STEP) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_U) &&
+        pd_editor_visual_state_adjust_dark_intensity(
+            &app_context->visual_state,
+            -PD_APP_VIEWPORT_CONTROLLER_DARK_INTENSITY_STEP) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_I) &&
+        pd_editor_visual_state_adjust_dark_intensity(
+            &app_context->visual_state,
+            PD_APP_VIEWPORT_CONTROLLER_DARK_INTENSITY_STEP) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_O) &&
+        pd_editor_visual_state_adjust_shadow_strength(
+            &app_context->visual_state,
+            -PD_APP_VIEWPORT_CONTROLLER_SHADOW_ALPHA_STEP) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_P) &&
+        pd_editor_visual_state_adjust_shadow_strength(
+            &app_context->visual_state,
+            PD_APP_VIEWPORT_CONTROLLER_SHADOW_ALPHA_STEP) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyDown(KEY_LEFT) &&
+        pd_editor_visual_state_adjust_light_direction(
+            &app_context->visual_state,
+            -PD_APP_VIEWPORT_CONTROLLER_LIGHT_STEP,
+            0.0f,
+            0.0f) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyDown(KEY_RIGHT) &&
+        pd_editor_visual_state_adjust_light_direction(
+            &app_context->visual_state,
+            PD_APP_VIEWPORT_CONTROLLER_LIGHT_STEP,
+            0.0f,
+            0.0f) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyDown(KEY_UP) &&
+        pd_editor_visual_state_adjust_light_direction(
+            &app_context->visual_state,
+            0.0f,
+            PD_APP_VIEWPORT_CONTROLLER_LIGHT_STEP,
+            0.0f) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyDown(KEY_DOWN) &&
+        pd_editor_visual_state_adjust_light_direction(
+            &app_context->visual_state,
+            0.0f,
+            -PD_APP_VIEWPORT_CONTROLLER_LIGHT_STEP,
+            0.0f) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_K) &&
+        pd_editor_visual_state_adjust_shadow_offset(
+            &app_context->visual_state,
+            -PD_APP_VIEWPORT_CONTROLLER_SHADOW_OFFSET_STEP,
+            0.0f) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_L) &&
+        pd_editor_visual_state_adjust_shadow_offset(
+            &app_context->visual_state,
+            PD_APP_VIEWPORT_CONTROLLER_SHADOW_OFFSET_STEP,
+            0.0f) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_N) &&
+        pd_editor_visual_state_adjust_shadow_offset(
+            &app_context->visual_state,
+            0.0f,
+            -PD_APP_VIEWPORT_CONTROLLER_SHADOW_OFFSET_STEP) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_M) &&
+        pd_editor_visual_state_adjust_shadow_offset(
+            &app_context->visual_state,
+            0.0f,
+            PD_APP_VIEWPORT_CONTROLLER_SHADOW_OFFSET_STEP) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    return PD_CORE_RESULT_OK;
 }
 
 static void pd_app_viewport_controller_local_draw_shadow(PdRenderShadowConfig shadow_config)
@@ -598,6 +818,7 @@ int main(int argc, char** argv)
     int edge_normal_texture_location;
     int edge_depth_texture_location;
     int edge_texel_size_location;
+    int edge_sample_radius_location;
     int edge_depth_threshold_location;
     int edge_normal_threshold_location;
     Vector2 edge_texel_size;
@@ -606,6 +827,7 @@ int main(int argc, char** argv)
     Vector2 screen_position = { 0.0f, 0.0f };
     int is_interactive = pd_app_viewport_controller_local_has_argument(argc, argv, "--interactive");
     int has_face_highlight_model = 0;
+    int needs_cube_model_rebuild = 0;
     int run_result = 0;
 
     if (pd_app_lifecycle_controller_init(&app_context) != PD_CORE_RESULT_OK) {
@@ -652,15 +874,18 @@ int main(int argc, char** argv)
     edge_normal_texture_location = GetShaderLocation(edge_shader, "normalTexture");
     edge_depth_texture_location = GetShaderLocation(edge_shader, "depthTexture");
     edge_texel_size_location = GetShaderLocation(edge_shader, "texelSize");
+    edge_sample_radius_location = GetShaderLocation(edge_shader, "edgeSampleRadius");
     edge_depth_threshold_location = GetShaderLocation(edge_shader, "edgeDepthThreshold");
     edge_normal_threshold_location = GetShaderLocation(edge_shader, "edgeNormalThreshold");
     edge_texel_size.x = 1.0f / (float)window_config.width;
     edge_texel_size.y = 1.0f / (float)window_config.height;
     SetShaderValue(edge_shader, edge_texel_size_location, &edge_texel_size, SHADER_UNIFORM_VEC2);
-    SetShaderValue(
-        edge_shader, edge_depth_threshold_location, &edge_shader_config.edge_depth_threshold, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(
-        edge_shader, edge_normal_threshold_location, &edge_shader_config.edge_normal_threshold, SHADER_UNIFORM_FLOAT);
+    edge_shader_config.edge_sample_radius = visual_config.edge_sample_radius;
+    edge_shader_config.edge_depth_threshold = visual_config.edge_depth_threshold;
+    edge_shader_config.edge_normal_threshold = visual_config.edge_normal_threshold;
+    SetShaderValue(edge_shader, edge_sample_radius_location, &visual_config.edge_sample_radius, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(edge_shader, edge_depth_threshold_location, &visual_config.edge_depth_threshold, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(edge_shader, edge_normal_threshold_location, &visual_config.edge_normal_threshold, SHADER_UNIFORM_FLOAT);
 
     cube_mesh = pd_app_viewport_controller_local_make_mesh(&render_mesh_buffer);
     cube_model = LoadModelFromMesh(cube_mesh);
@@ -690,6 +915,22 @@ int main(int argc, char** argv)
         if (is_interactive) {
             pd_app_viewport_controller_local_update_camera(&camera_state);
             pd_app_viewport_controller_local_update_transform(&app_context.transform_state);
+            if (pd_app_viewport_controller_local_update_visual_controls(
+                    &app_context,
+                    &needs_cube_model_rebuild) != PD_CORE_RESULT_OK) {
+                run_result = 1;
+                break;
+            }
+
+            if (needs_cube_model_rebuild &&
+                pd_app_viewport_controller_local_rebuild_cube_model(
+                    &render_mesh_buffer,
+                    &cube_model,
+                    &app_context.active_mesh) != PD_CORE_RESULT_OK) {
+                run_result = 1;
+                break;
+            }
+
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
                 pd_app_viewport_controller_local_pick_face(
                     &app_context,
@@ -703,6 +944,26 @@ int main(int argc, char** argv)
                 break;
             }
         }
+
+        visual_config = pd_app_viewport_controller_local_make_visual_config(&app_context.visual_state);
+        shadow_config = pd_app_viewport_controller_local_make_shadow_config(&app_context.visual_state);
+        SetShaderValue(hardstep_shader, light_direction_location, &visual_config.light_direction, SHADER_UNIFORM_VEC3);
+        SetShaderValue(hardstep_shader, dark_intensity_location, &visual_config.dark_intensity, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(
+            edge_shader,
+            edge_sample_radius_location,
+            &visual_config.edge_sample_radius,
+            SHADER_UNIFORM_FLOAT);
+        SetShaderValue(
+            edge_shader,
+            edge_depth_threshold_location,
+            &visual_config.edge_depth_threshold,
+            SHADER_UNIFORM_FLOAT);
+        SetShaderValue(
+            edge_shader,
+            edge_normal_threshold_location,
+            &visual_config.edge_normal_threshold,
+            SHADER_UNIFORM_FLOAT);
 
         if (pd_app_viewport_controller_local_resize_targets(
                 &target_controller,
