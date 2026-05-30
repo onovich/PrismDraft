@@ -40,7 +40,7 @@ The first milestone is not a full editor. It is a clean, testable foundation: C1
 - [x] Split shader assets into named files under `shaders/`.
 - [x] Add render config for background color, light direction, and hard-step threshold.
 - [x] Add depth/normal render target plan.
-- [ ] Implement screen-space edge separation using depth and normal differences.
+- [x] Implement screen-space edge separation using depth and normal differences.
 - [ ] Capture viewport reference screenshots and compare them against `sample/` style checkpoints.
 
 ## Phase 3: Modeling Tools
