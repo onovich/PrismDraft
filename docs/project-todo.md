@@ -24,7 +24,7 @@ The first milestone is not a full editor. It is a clean, testable foundation: C1
 - [x] Define core result/status types.
 - [x] Define `PdCoreMeshEntity`, `PdCoreVertexEntity`, `PdCoreHalfEdgeEntity`, and `PdCoreFaceEntity`.
 - [x] Define mesh storage config and explicit count/capacity ownership rules.
-- [ ] Implement mesh init/free/reserve routines.
+- [x] Implement mesh init/free/reserve routines.
 - [ ] Implement mesh invariant validator for index ranges, closed face loops, and pair symmetry.
 - [ ] Add a deterministic cube half-edge fixture.
 - [ ] Add tests for init/free/reserve, cube fixture counts, and validator failure cases.
