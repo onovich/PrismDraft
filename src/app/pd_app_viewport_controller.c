@@ -3,6 +3,8 @@
 #include "prismdraft/engine/pd_engine_window_config.h"
 #include "prismdraft/render/pd_render_depth_shader.h"
 #include "prismdraft/render/pd_render_edge_shader.h"
+#include "prismdraft/render/pd_render_face_highlight_buffer.h"
+#include "prismdraft/render/pd_render_face_highlight_config.h"
 #include "prismdraft/render/pd_render_hardstep_shader.h"
 #include "prismdraft/render/pd_render_mesh_buffer.h"
 #include "prismdraft/render/pd_render_normal_shader.h"
@@ -71,6 +73,7 @@ int main(void)
     PdEngineWindowConfig window_config = pd_engine_window_config_default();
     PdEngineCameraState camera_state = pd_engine_camera_controller_make_default();
     PdRenderVisualConfig visual_config = pd_render_visual_config_default();
+    PdRenderFaceHighlightConfig face_highlight_config = pd_render_face_highlight_config_default();
     PdRenderShadowConfig shadow_config = pd_render_shadow_config_default();
     PdRenderHardstepShaderConfig shader_config = pd_render_hardstep_shader_config_default();
     PdRenderDepthShaderConfig depth_shader_config = pd_render_depth_shader_config_default();
@@ -78,8 +81,11 @@ int main(void)
     PdRenderEdgeShaderConfig edge_shader_config = pd_render_edge_shader_config_default();
     PdRenderTargetController target_controller = { 0 };
     PdRenderMeshBuffer render_mesh_buffer = { 0 };
+    PdRenderMeshBuffer face_highlight_buffer = { 0 };
     Mesh cube_mesh;
+    Mesh face_highlight_mesh = { 0 };
     Model cube_model;
+    Model face_highlight_model = { 0 };
     Shader hardstep_shader;
     Shader depth_shader;
     Shader normal_shader;
@@ -107,6 +113,22 @@ int main(void)
         return 1;
     }
 
+    if (pd_editor_selection_state_select_face(&app_context.selection_state, 1u) != PD_CORE_RESULT_OK) {
+        pd_render_mesh_buffer_free(&render_mesh_buffer);
+        pd_app_lifecycle_controller_shutdown(&app_context);
+        return 1;
+    }
+
+    if (pd_render_face_highlight_buffer_build_for_face(
+            &face_highlight_buffer,
+            &app_context.active_mesh,
+            app_context.selection_state.primary_index,
+            face_highlight_config) != PD_CORE_RESULT_OK) {
+        pd_render_mesh_buffer_free(&render_mesh_buffer);
+        pd_app_lifecycle_controller_shutdown(&app_context);
+        return 1;
+    }
+
     SetConfigFlags(FLAG_WINDOW_HIDDEN | FLAG_MSAA_4X_HINT);
     InitWindow(window_config.width, window_config.height, window_config.title);
     SetTargetFPS(60);
@@ -115,6 +137,7 @@ int main(void)
             &target_controller, pd_render_target_config_make(window_config.width, window_config.height)) !=
         PD_CORE_RESULT_OK) {
         CloseWindow();
+        pd_render_mesh_buffer_free(&face_highlight_buffer);
         pd_render_mesh_buffer_free(&render_mesh_buffer);
         pd_app_lifecycle_controller_shutdown(&app_context);
         return 1;
@@ -143,13 +166,19 @@ int main(void)
 
     cube_mesh = pd_app_viewport_controller_local_make_mesh(&render_mesh_buffer);
     cube_model = LoadModelFromMesh(cube_mesh);
+    face_highlight_mesh = pd_app_viewport_controller_local_make_mesh(&face_highlight_buffer);
+    face_highlight_model = LoadModelFromMesh(face_highlight_mesh);
 
     cube_model.materials[0].shader = hardstep_shader;
+    face_highlight_model.materials[0].shader = hardstep_shader;
     BeginTextureMode(target_controller.color_depth_target);
     ClearBackground(visual_config.background_color);
     BeginMode3D(camera_state.camera);
     pd_app_viewport_controller_local_draw_shadow(shadow_config);
     DrawModel(cube_model, origin, 1.0f, WHITE);
+    BeginBlendMode(BLEND_ALPHA);
+    DrawModel(face_highlight_model, origin, 1.0f, WHITE);
+    EndBlendMode();
     EndMode3D();
     EndTextureMode();
 
@@ -187,6 +216,8 @@ int main(void)
     TakeScreenshot("captures/phase2_cube.png");
 
     cube_model.materials[0].shader = (Shader){ 0 };
+    face_highlight_model.materials[0].shader = (Shader){ 0 };
+    UnloadModel(face_highlight_model);
     UnloadModel(cube_model);
     UnloadShader(edge_shader);
     UnloadShader(normal_shader);
@@ -195,6 +226,7 @@ int main(void)
     pd_render_target_controller_free(&target_controller);
     CloseWindow();
 
+    pd_render_mesh_buffer_free(&face_highlight_buffer);
     pd_render_mesh_buffer_free(&render_mesh_buffer);
     pd_app_lifecycle_controller_shutdown(&app_context);
     return 0;

@@ -49,7 +49,7 @@ The current milestone is the first editable loop: selection state, picking, face
 
 - [x] Define editor selection state for vertex, edge, and face selection.
 - [x] Implement ray picking against flattened or core mesh geometry.
-- [ ] Add face highlight rendering path.
+- [x] Add face highlight rendering path.
 - [ ] Implement face inset with topology proof comment and validator call.
 - [ ] Implement face extrude with topology proof comment and validator call.
 - [ ] Implement bevel with topology proof comment and validator call.

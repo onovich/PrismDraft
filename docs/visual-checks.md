@@ -29,3 +29,23 @@ Current comparison:
 Next visual target:
 
 - Move into Phase 3 modeling checks while keeping the current screenshot as the baseline for flat color, hard edges, and designed shadow behavior.
+
+## Phase 3 Face Highlight Check
+
+Screenshot command:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\RunPhase2Viewport.ps1
+```
+
+Expected output:
+
+```text
+captures/phase2_cube.png
+```
+
+Current comparison:
+
+- Pass: Selected face highlight is visible as a flat, semi-transparent color block.
+- Pass: Highlight follows the selected face surface without replacing edge separation.
+- Pass: Shadow, background, hard-step lighting, and crisp silhouette remain aligned with the `sample/` references.
