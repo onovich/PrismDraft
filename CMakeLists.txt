@@ -167,6 +167,7 @@ endif()
 
 add_library(prismdraft_animation STATIC
   src/animation/pd_animation_prs_entity.c
+  src/animation/pd_animation_timeline_controller.c
 )
 
 target_include_directories(prismdraft_animation
@@ -783,6 +784,26 @@ endif()
 add_test(
   NAME pd_animation_prs_entity_test
   COMMAND pd_animation_prs_entity_test
+)
+
+add_executable(pd_animation_timeline_controller_test
+  tests/animation/pd_animation_timeline_controller_test.c
+)
+
+target_link_libraries(pd_animation_timeline_controller_test
+  PRIVATE
+    prismdraft_animation
+)
+
+if(MSVC)
+  target_compile_options(pd_animation_timeline_controller_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_animation_timeline_controller_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_animation_timeline_controller_test
+  COMMAND pd_animation_timeline_controller_test
 )
 
 add_executable(prismdraft_phase1_viewport

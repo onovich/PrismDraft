@@ -62,7 +62,7 @@ The current milestone is delivery: independent export buffers, glTF/GLB serializ
 - [x] Write GLB binary export.
 - [x] Add import checks in an external viewer or documented validation path.
 - [x] Define object-level PRS animation data.
-- [ ] Add a minimal timeline playback controller.
+- [x] Add a minimal timeline playback controller.
 
 ## Always-On Checks
 
