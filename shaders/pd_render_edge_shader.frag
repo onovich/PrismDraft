@@ -2,7 +2,7 @@
 
 in vec2 fragTexCoord;
 
-uniform sampler2D colorTexture;
+uniform sampler2D texture0;
 uniform sampler2D normalTexture;
 uniform sampler2D depthTexture;
 uniform vec2 texelSize;
@@ -23,7 +23,7 @@ vec3 sampleNormal(vec2 offset)
 
 void main()
 {
-    vec4 baseColor = texture(colorTexture, fragTexCoord);
+    vec4 baseColor = texture(texture0, fragTexCoord);
     float depthCenter = sampleDepth(vec2(0.0, 0.0));
     vec3 normalCenter = sampleNormal(vec2(0.0, 0.0));
 
@@ -42,6 +42,6 @@ void main()
     float edgeMask = step(edgeDepthThreshold, depthDelta) + step(edgeNormalThreshold, normalDelta);
     edgeMask = clamp(edgeMask, 0.0, 1.0);
 
-    vec3 edgeColor = vec3(0.18, 0.18, 0.22);
-    finalColor = vec4(mix(baseColor.rgb, edgeColor, edgeMask * 0.35), baseColor.a);
+    vec3 edgeColor = vec3(0.16, 0.16, 0.2);
+    finalColor = vec4(mix(baseColor.rgb, edgeColor, edgeMask * 0.55), baseColor.a);
 }

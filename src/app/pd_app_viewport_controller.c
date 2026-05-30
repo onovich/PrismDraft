@@ -1,8 +1,13 @@
 #include "prismdraft/app/pd_app_lifecycle_controller.h"
 #include "prismdraft/engine/pd_engine_camera_controller.h"
 #include "prismdraft/engine/pd_engine_window_config.h"
+#include "prismdraft/render/pd_render_depth_shader.h"
+#include "prismdraft/render/pd_render_edge_shader.h"
 #include "prismdraft/render/pd_render_hardstep_shader.h"
 #include "prismdraft/render/pd_render_mesh_buffer.h"
+#include "prismdraft/render/pd_render_normal_shader.h"
+#include "prismdraft/render/pd_render_target_config.h"
+#include "prismdraft/render/pd_render_target_controller.h"
 #include "prismdraft/render/pd_render_visual_config.h"
 
 #include "raylib.h"
@@ -45,13 +50,30 @@ int main(void)
     PdEngineCameraState camera_state = pd_engine_camera_controller_make_default();
     PdRenderVisualConfig visual_config = pd_render_visual_config_default();
     PdRenderHardstepShaderConfig shader_config = pd_render_hardstep_shader_config_default();
+    PdRenderDepthShaderConfig depth_shader_config = pd_render_depth_shader_config_default();
+    PdRenderNormalShaderConfig normal_shader_config = pd_render_normal_shader_config_default();
+    PdRenderEdgeShaderConfig edge_shader_config = pd_render_edge_shader_config_default();
+    PdRenderTargetController target_controller = { 0 };
     PdRenderMeshBuffer render_mesh_buffer = { 0 };
     Mesh cube_mesh;
     Model cube_model;
     Shader hardstep_shader;
+    Shader depth_shader;
+    Shader normal_shader;
+    Shader edge_shader;
     int light_direction_location;
     int dark_intensity_location;
+    int edge_normal_texture_location;
+    int edge_depth_texture_location;
+    int edge_texel_size_location;
+    int edge_depth_threshold_location;
+    int edge_normal_threshold_location;
+    Vector2 edge_texel_size;
+    Rectangle screen_source;
+    Vector2 screen_position = { 0.0f, 0.0f };
     Vector3 origin = { 0.0f, 0.0f, 0.0f };
+    Color normal_background = { 128u, 128u, 255u, 255u };
+    Color depth_background = { 255u, 255u, 255u, 255u };
 
     if (pd_app_lifecycle_controller_init(&app_context) != PD_CORE_RESULT_OK) {
         return 1;
@@ -66,21 +88,75 @@ int main(void)
     InitWindow(window_config.width, window_config.height, window_config.title);
     SetTargetFPS(60);
 
+    if (pd_render_target_controller_init(
+            &target_controller, pd_render_target_config_make(window_config.width, window_config.height)) !=
+        PD_CORE_RESULT_OK) {
+        CloseWindow();
+        pd_render_mesh_buffer_free(&render_mesh_buffer);
+        pd_app_lifecycle_controller_shutdown(&app_context);
+        return 1;
+    }
+
     hardstep_shader = LoadShader(shader_config.vertex_shader_path, shader_config.fragment_shader_path);
+    depth_shader = LoadShader(depth_shader_config.vertex_shader_path, depth_shader_config.fragment_shader_path);
+    normal_shader = LoadShader(normal_shader_config.vertex_shader_path, normal_shader_config.fragment_shader_path);
+    edge_shader = LoadShader(edge_shader_config.vertex_shader_path, edge_shader_config.fragment_shader_path);
     light_direction_location = GetShaderLocation(hardstep_shader, "lightDirection");
     dark_intensity_location = GetShaderLocation(hardstep_shader, "darkIntensity");
     SetShaderValue(hardstep_shader, light_direction_location, &shader_config.light_direction, SHADER_UNIFORM_VEC3);
     SetShaderValue(hardstep_shader, dark_intensity_location, &shader_config.dark_intensity, SHADER_UNIFORM_FLOAT);
+    edge_normal_texture_location = GetShaderLocation(edge_shader, "normalTexture");
+    edge_depth_texture_location = GetShaderLocation(edge_shader, "depthTexture");
+    edge_texel_size_location = GetShaderLocation(edge_shader, "texelSize");
+    edge_depth_threshold_location = GetShaderLocation(edge_shader, "edgeDepthThreshold");
+    edge_normal_threshold_location = GetShaderLocation(edge_shader, "edgeNormalThreshold");
+    edge_texel_size.x = 1.0f / (float)window_config.width;
+    edge_texel_size.y = 1.0f / (float)window_config.height;
+    SetShaderValue(edge_shader, edge_texel_size_location, &edge_texel_size, SHADER_UNIFORM_VEC2);
+    SetShaderValue(
+        edge_shader, edge_depth_threshold_location, &edge_shader_config.edge_depth_threshold, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(
+        edge_shader, edge_normal_threshold_location, &edge_shader_config.edge_normal_threshold, SHADER_UNIFORM_FLOAT);
 
     cube_mesh = pd_app_viewport_controller_local_make_mesh(&render_mesh_buffer);
     cube_model = LoadModelFromMesh(cube_mesh);
-    cube_model.materials[0].shader = hardstep_shader;
 
-    BeginDrawing();
+    cube_model.materials[0].shader = hardstep_shader;
+    BeginTextureMode(target_controller.color_depth_target);
     ClearBackground(visual_config.background_color);
     BeginMode3D(camera_state.camera);
     DrawModel(cube_model, origin, 1.0f, WHITE);
     EndMode3D();
+    EndTextureMode();
+
+    cube_model.materials[0].shader = depth_shader;
+    BeginTextureMode(target_controller.depth_target);
+    ClearBackground(depth_background);
+    BeginMode3D(camera_state.camera);
+    DrawModel(cube_model, origin, 1.0f, WHITE);
+    EndMode3D();
+    EndTextureMode();
+
+    cube_model.materials[0].shader = normal_shader;
+    BeginTextureMode(target_controller.normal_target);
+    ClearBackground(normal_background);
+    BeginMode3D(camera_state.camera);
+    DrawModel(cube_model, origin, 1.0f, WHITE);
+    EndMode3D();
+    EndTextureMode();
+
+    screen_source = (Rectangle){ 0.0f,
+                                 0.0f,
+                                 (float)target_controller.color_depth_target.texture.width,
+                                 -(float)target_controller.color_depth_target.texture.height };
+
+    BeginDrawing();
+    ClearBackground(visual_config.background_color);
+    BeginShaderMode(edge_shader);
+    SetShaderValueTexture(edge_shader, edge_normal_texture_location, target_controller.normal_target.texture);
+    SetShaderValueTexture(edge_shader, edge_depth_texture_location, target_controller.depth_target.texture);
+    DrawTextureRec(target_controller.color_depth_target.texture, screen_source, screen_position, WHITE);
+    EndShaderMode();
     EndDrawing();
 
     MakeDirectory("captures");
@@ -88,7 +164,11 @@ int main(void)
 
     cube_model.materials[0].shader = (Shader){ 0 };
     UnloadModel(cube_model);
+    UnloadShader(edge_shader);
+    UnloadShader(normal_shader);
+    UnloadShader(depth_shader);
     UnloadShader(hardstep_shader);
+    pd_render_target_controller_free(&target_controller);
     CloseWindow();
 
     pd_render_mesh_buffer_free(&render_mesh_buffer);
