@@ -77,7 +77,7 @@
 
                                               ],
                                      "commands":  [
-
+                                                     "tools\\SmokeViewport.cmd"
                                                   ]
                                  },
                        "package":  {

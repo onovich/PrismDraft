@@ -16,6 +16,24 @@
 #include "raylib.h"
 
 #include <stddef.h>
+#include <string.h>
+
+static int pd_app_viewport_controller_local_has_argument(int argc, char** argv, const char* expected_argument)
+{
+    int argument_index;
+
+    if (argv == 0 || expected_argument == 0) {
+        return 0;
+    }
+
+    for (argument_index = 1; argument_index < argc; argument_index++) {
+        if (argv[argument_index] != 0 && strcmp(argv[argument_index], expected_argument) == 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 static Mesh pd_app_viewport_controller_local_make_mesh(const PdRenderMeshBuffer* render_mesh_buffer)
 {
@@ -67,7 +85,7 @@ static void pd_app_viewport_controller_local_draw_shadow(PdRenderShadowConfig sh
     EndBlendMode();
 }
 
-int main(void)
+int main(int argc, char** argv)
 {
     PdAppContextEntity app_context;
     PdEngineWindowConfig window_config = pd_engine_window_config_default();
@@ -103,6 +121,7 @@ int main(void)
     Vector3 origin = { 0.0f, 0.0f, 0.0f };
     Color normal_background = { 128u, 128u, 255u, 255u };
     Color depth_background = { 255u, 255u, 255u, 255u };
+    int is_interactive = pd_app_viewport_controller_local_has_argument(argc, argv, "--interactive");
 
     if (pd_app_lifecycle_controller_init(&app_context) != PD_CORE_RESULT_OK) {
         return 1;
@@ -129,7 +148,7 @@ int main(void)
         return 1;
     }
 
-    SetConfigFlags(FLAG_WINDOW_HIDDEN | FLAG_MSAA_4X_HINT);
+    SetConfigFlags((is_interactive ? 0u : FLAG_WINDOW_HIDDEN) | FLAG_MSAA_4X_HINT);
     InitWindow(window_config.width, window_config.height, window_config.title);
     SetTargetFPS(60);
 
@@ -203,17 +222,21 @@ int main(void)
                                  (float)target_controller.color_depth_target.texture.width,
                                  -(float)target_controller.color_depth_target.texture.height };
 
-    BeginDrawing();
-    ClearBackground(visual_config.background_color);
-    BeginShaderMode(edge_shader);
-    SetShaderValueTexture(edge_shader, edge_normal_texture_location, target_controller.normal_target.texture);
-    SetShaderValueTexture(edge_shader, edge_depth_texture_location, target_controller.depth_target.texture);
-    DrawTextureRec(target_controller.color_depth_target.texture, screen_source, screen_position, WHITE);
-    EndShaderMode();
-    EndDrawing();
+    do {
+        BeginDrawing();
+        ClearBackground(visual_config.background_color);
+        BeginShaderMode(edge_shader);
+        SetShaderValueTexture(edge_shader, edge_normal_texture_location, target_controller.normal_target.texture);
+        SetShaderValueTexture(edge_shader, edge_depth_texture_location, target_controller.depth_target.texture);
+        DrawTextureRec(target_controller.color_depth_target.texture, screen_source, screen_position, WHITE);
+        EndShaderMode();
+        EndDrawing();
+    } while (is_interactive && !WindowShouldClose());
 
-    MakeDirectory("captures");
-    TakeScreenshot("captures/phase2_cube.png");
+    if (!is_interactive) {
+        MakeDirectory("captures");
+        TakeScreenshot("captures/phase2_cube.png");
+    }
 
     cube_model.materials[0].shader = (Shader){ 0 };
     face_highlight_model.materials[0].shader = (Shader){ 0 };

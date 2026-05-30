@@ -80,6 +80,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\CheckArchitecture.ps1
 
 This guards PrismDraft's required `pd_<layer>_<business>_<role>` source naming, rejects catch-all directories, blocks C++ syntax patterns in C files, and prevents the `core` layer from including Raylib/RLGL/Raymath.
 
+## Smoke
+
+`smoke` runs:
+
+```powershell
+tools\SmokeViewport.cmd
+```
+
+For manual visual inspection, run:
+
+```powershell
+tools\SmokeViewportInteractive.cmd
+```
+
+The automated command builds the viewport executable, renders the hidden Raylib viewport, writes `captures/phase2_cube.png`, and exits. The interactive command opens a visible Raylib window and exits when the window is closed.
+
 ## Dev Server
 
 Start command: ``
