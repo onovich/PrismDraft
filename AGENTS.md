@@ -22,6 +22,21 @@ $bytes[0..2] -join ' '
 
 If the first three bytes are `239 187 191`, the file has a UTF-8 BOM and should be rewritten without BOM.
 
+## PrismDraft Architecture Guardrails
+
+Before editing source code, Codex must read and follow [docs/codex-architecture-workflow.md](docs/codex-architecture-workflow.md). This workflow is mandatory for layer boundaries, directory layout, file names, C symbol names, topology mutation comments, and forbidden patterns.
+
+Key project constraints:
+
+- Treat [docs/prismdraft-design.md](docs/prismdraft-design.md) and [docs/project-brief.md](docs/project-brief.md) as the product and architecture source of truth.
+- Treat [docs/visual-reference.md](docs/visual-reference.md) and the images under `sample/` as the visual target set for modeling style, viewport rendering, and design explanations.
+- Keep the core in pure C11 with indexed, contiguous data structures.
+- Use the naming grammar `pd_<layer>_<business>_<role>` for C files and public symbols.
+- Preserve one-way dependencies: `app -> editor -> render -> engine -> core`; `export -> core`; `animation -> core`.
+- Do not add catch-all modules such as `common`, `misc`, `helpers`, `utils`, or `manager`.
+- Run `powershell -NoProfile -ExecutionPolicy Bypass -File tools\CheckArchitecture.ps1` when source files or architecture-sensitive directories are changed.
+- After each completed small transaction, use `gitflow` / `project-git-workflow` to commit and push the task-scoped changes before starting the next independent transaction.
+
 <!-- codex-init-flow: initialized -->
 
 ## Codex Project Workflow

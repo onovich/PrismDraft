@@ -1,4 +1,4 @@
-﻿<!-- codex-project-ops-workflow: initialized -->
+<!-- codex-project-ops-workflow: initialized -->
 <!-- initialized-at: 2026-05-30 20:34:40 +08:00 -->
 
 # Codex Ops Workflow
@@ -37,6 +37,16 @@ C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\ReleaseDry
 ## Validate Sequence
 
 lint, typecheck, build, test, structureCheck, docsCheck
+
+## Structure Check
+
+`structureCheck` runs:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\CheckArchitecture.ps1
+```
+
+This guards PrismDraft's required `pd_<layer>_<business>_<role>` source naming, rejects catch-all directories, blocks C++ syntax patterns in C files, and prevents the `core` layer from including Raylib/RLGL/Raymath.
 
 ## Dev Server
 

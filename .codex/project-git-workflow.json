@@ -9,9 +9,9 @@
     "validationCommands":  [
 
                            ],
-    "stagingPolicy":  "ask each time",
+    "stagingPolicy":  "stage only task-scoped paths; commit and push each completed small transaction",
     "commitCommand":  "",
     "pushCommand":  "git -c safe.directory=D:/LabProjects/PrismDraft push -u origin HEAD",
-    "docsRequirement":  "",
+    "docsRequirement":  "After each completed small transaction, use gitflow/project-git-workflow CommitAndPush for the task-scoped paths before starting another independent transaction.",
     "forbiddenCommands":  ""
 }

@@ -48,6 +48,18 @@ ask each time
 
 Inspect status before staging. Preserve unrelated user changes unless the user explicitly asks to include them.
 
+## Transaction Policy
+
+Codex must treat each small, complete unit of work as a git transaction. After finishing one small transaction, run the `gitflow` / `project-git-workflow` path to commit and push the task-scoped changes before starting another independent transaction.
+
+Use `CommitAndPush.cmd` for the normal path:
+
+```powershell
+C:\Users\Administrator\.codex\skills\project-git-workflow\scripts\git\CommitAndPush.cmd -Message "type: concise summary" -Paths path\to\file,other\file
+```
+
+Do not batch unrelated architectural, rendering, tooling, and content changes into one commit unless the user explicitly asks. Do not include unrelated user changes in a transaction without explicit user direction.
+
 ## Commit
 
 Use the global wrapper's built-in git commit after staging according to policy. Prefer concise conventional commit messages unless the user specifies another message.

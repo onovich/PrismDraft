@@ -2,10 +2,13 @@
 
 Source design mirror: [docs/prismdraft-design.md](prismdraft-design.md)
 Synced source: https://docs.google.com/document/d/1gocSWlCi_SNYCkqoY9bJzcjeV5UcEzL5ovkk7YyUKnA/edit?usp=sharing
+Visual reference: [docs/visual-reference.md](visual-reference.md)
 
 ## Intent
 
 PrismDraft is a lightweight standalone 3D modeling and rendering tool for vector-like, faceted hard-surface art. It should feel closer to spatial poster drafting than to a general DCC package: precise geometry, flat color blocks, hard edges, and clean export into engines such as Godot, Unity, and Unreal.
+
+The user-provided images under `sample/` are the visual target set. Use them to explain and check the intended modeling and rendering style: icon-like objects, flat poster backgrounds, hard quantized shadows, clean silhouettes, and low-detail geometric surfaces.
 
 ## Hard Constraints
 
@@ -15,6 +18,7 @@ PrismDraft is a lightweight standalone 3D modeling and rendering tool for vector
 - Avoid per-vertex, per-edge, or per-face `malloc/free` inside modeling operations.
 - Pass all application state explicitly through `AppContext`; avoid singletons, hidden globals, and static global state.
 - Render from vertex color, face normals, and custom GLSL hard-step shading. No textures, UV workflow, smooth lighting, or PBR material graph.
+- Compare viewport and shader work against the `sample/` visual references before treating the look as correct.
 
 ## Architecture Shape
 
@@ -34,3 +38,5 @@ PrismDraft is a lightweight standalone 3D modeling and rendering tool for vector
 
 - Google Doc design has been mirrored locally.
 - Project initialization and workflow wiring should treat the mirrored design as the source of truth for implementation constraints.
+- Codex architecture work must follow [docs/codex-architecture-workflow.md](codex-architecture-workflow.md).
+- Rendering and design explanations should reference [docs/visual-reference.md](visual-reference.md) and the images in `sample/`.
