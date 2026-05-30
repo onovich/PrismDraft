@@ -75,6 +75,16 @@ The current milestone is turning the proven data/render/export pieces into a use
 - [ ] Add camera orbit, pan, and zoom controls for inspecting the model.
 - [ ] Add an interactive editor smoke mode for face picking and selection feedback.
 
+### Phase 5 Implementation Order
+
+1. Stabilize smoke lifecycle: automate launch, wait, close, and process-exit verification.
+2. Fix viewport resizing: support resizable windows, recreate render targets, and update edge texel size when size changes.
+3. Fix edge alignment: make outline and crease edges read as structural boundaries, not as misregistered overpaint on faces.
+4. Add anti-aliasing: treat diagonal face boundaries, edge overlay, and hard projected shadow as one visual polish pass.
+5. Capture a new viewport image and compare it against `sample/` and the manual smoke notes.
+6. Add camera orbit, pan, and zoom after the visual baseline is stable.
+7. Add face picking and selected-face feedback as the first interactive editor smoke.
+
 ## Phase 6: Basic Editor Controls
 
 - [ ] Add object transform state for move, rotate, and scale.
@@ -87,6 +97,17 @@ The current milestone is turning the proven data/render/export pieces into a use
 - [ ] Add a compact on-screen debug/control overlay for current tool, selection, and visual parameters.
 - [ ] Add an app-level export smoke path for glTF and GLB from the current mesh.
 - [ ] Add a minimal app-level timeline demo that applies PRS animation to an object.
+
+### Phase 6 Implementation Order
+
+1. Add object transform state and non-destructive move, rotate, and scale controls.
+2. Add face color editing, then background color editing.
+3. Add outline controls for thickness and edge thresholds.
+4. Add lighting controls for direction, dark intensity, shadow strength, and shadow offset.
+5. Add a compact overlay that exposes current selection, active tool, transform values, color, outline, and lighting values.
+6. Wire modeling commands into the interactive smoke: inset, extrude, bevel, and loop cut.
+7. Add app-level export smoke for glTF and GLB from the edited mesh.
+8. Add the minimal PRS timeline demo after transform state is visible in the app layer.
 
 ## Always-On Checks
 
