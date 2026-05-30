@@ -41,7 +41,9 @@ The first milestone is not a full editor. It is a clean, testable foundation: C1
 - [x] Add render config for background color, light direction, and hard-step threshold.
 - [x] Add depth/normal render target plan.
 - [x] Implement screen-space edge separation using depth and normal differences.
-- [ ] Capture viewport reference screenshots and compare them against `sample/` style checkpoints.
+- [x] Capture viewport reference screenshots and compare them against `sample/` style checkpoints.
+- [ ] Composite edge separation into the viewport screenshot path.
+- [ ] Add a hard projected shadow or shadow-like graphic pass for stronger sample alignment.
 
 ## Phase 3: Modeling Tools
 

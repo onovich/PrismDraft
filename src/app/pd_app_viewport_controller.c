@@ -84,7 +84,7 @@ int main(void)
     EndDrawing();
 
     MakeDirectory("captures");
-    TakeScreenshot("captures/phase1_cube.png");
+    TakeScreenshot("captures/phase2_cube.png");
 
     cube_model.materials[0].shader = (Shader){ 0 };
     UnloadModel(cube_model);
