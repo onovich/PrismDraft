@@ -87,7 +87,7 @@ The current milestone is turning the proven data/render/export pieces into a use
 
 ## Phase 6: Basic Editor Controls
 
-- [ ] Add object transform state for move, rotate, and scale.
+- [x] Add object transform state for move, rotate, and scale.
 - [ ] Add transform controls or keyboard shortcuts for move, rotate, and scale.
 - [ ] Add keyboard or tool commands in the editor smoke for inset, extrude, bevel, and loop cut.
 - [ ] Add editable face color state and a simple face color adjustment control.
