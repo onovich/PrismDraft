@@ -8,9 +8,10 @@ Before changing code, Codex must read these files in order:
 
 1. [AGENTS.md](../AGENTS.md)
 2. [docs/project-brief.md](project-brief.md)
-3. [docs/visual-reference.md](visual-reference.md) when the task affects rendering, viewport presentation, modeling style, or design explanation.
-4. [docs/codex-architecture-workflow.md](codex-architecture-workflow.md)
-5. The specific module files being edited.
+3. [docs/project-todo.md](project-todo.md)
+4. [docs/visual-reference.md](visual-reference.md) when the task affects rendering, viewport presentation, modeling style, or design explanation.
+5. [docs/codex-architecture-workflow.md](codex-architecture-workflow.md)
+6. The specific module files being edited.
 
 If a task conflicts with this workflow or the design mirror, stop and update the workflow/design deliberately before implementing code.
 

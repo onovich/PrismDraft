@@ -3,6 +3,7 @@
 Source design mirror: [docs/prismdraft-design.md](prismdraft-design.md)
 Synced source: https://docs.google.com/document/d/1gocSWlCi_SNYCkqoY9bJzcjeV5UcEzL5ovkk7YyUKnA/edit?usp=sharing
 Visual reference: [docs/visual-reference.md](visual-reference.md)
+Project TODO: [docs/project-todo.md](project-todo.md)
 
 ## Intent
 
@@ -40,3 +41,4 @@ The user-provided images under `sample/` are the visual target set. Use them to 
 - Project initialization and workflow wiring should treat the mirrored design as the source of truth for implementation constraints.
 - Codex architecture work must follow [docs/codex-architecture-workflow.md](codex-architecture-workflow.md).
 - Rendering and design explanations should reference [docs/visual-reference.md](visual-reference.md) and the images in `sample/`.
+- Current implementation planning lives in [docs/project-todo.md](project-todo.md).

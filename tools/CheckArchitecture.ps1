@@ -25,7 +25,8 @@ foreach ($root in $sourceRoots) {
     continue
   }
 
-  $files = Get-ChildItem -LiteralPath $fullRoot -File -Recurse -Include *.c,*.h
+  $files = Get-ChildItem -LiteralPath $fullRoot -File -Recurse |
+    Where-Object { $_.Extension -ieq ".c" -or $_.Extension -ieq ".h" }
   foreach ($file in $files) {
     if ($file.Name -notmatch $sourceNamePattern) {
       $errors.Add("Invalid C file name: $($file.FullName). Expected pd_<layer>_<business>_<role>.(c|h).")

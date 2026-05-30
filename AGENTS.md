@@ -29,6 +29,7 @@ Before editing source code, Codex must read and follow [docs/codex-architecture-
 Key project constraints:
 
 - Treat [docs/prismdraft-design.md](docs/prismdraft-design.md) and [docs/project-brief.md](docs/project-brief.md) as the product and architecture source of truth.
+- Use [docs/project-todo.md](docs/project-todo.md) as the implementation backlog and keep it updated as small transactions are completed.
 - Treat [docs/visual-reference.md](docs/visual-reference.md) and the images under `sample/` as the visual target set for modeling style, viewport rendering, and design explanations.
 - Keep the core in pure C11 with indexed, contiguous data structures.
 - Use the naming grammar `pd_<layer>_<business>_<role>` for C files and public symbols.

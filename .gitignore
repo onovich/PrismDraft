@@ -1,0 +1,31 @@
+# Build outputs
+build/
+out/
+bin/
+obj/
+
+# C/C++ generated artifacts
+*.exe
+*.dll
+*.lib
+*.obj
+*.pdb
+*.ilk
+*.exp
+
+# Editor and OS noise
+.vs/
+.vscode/
+*.user
+*.suo
+Thumbs.db
+Desktop.ini
+
+# Generated exports and captures
+exports/
+captures/
+screenshots/
+
+# Local runtime state
+*.log
+*.tmp
