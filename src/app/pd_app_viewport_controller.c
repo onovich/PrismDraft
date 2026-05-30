@@ -267,6 +267,60 @@ static void pd_app_viewport_controller_local_update_transform(PdEditorTransformS
     }
 }
 
+static Color pd_app_viewport_controller_local_make_color(const uint8_t color[4])
+{
+    if (color == 0) {
+        return WHITE;
+    }
+
+    return (Color){ color[0], color[1], color[2], color[3] };
+}
+
+static Vector3 pd_app_viewport_controller_local_make_vector3(const float value[3])
+{
+    if (value == 0) {
+        return (Vector3){ 0.0f, -1.0f, 0.0f };
+    }
+
+    return (Vector3){ value[0], value[1], value[2] };
+}
+
+static PdRenderVisualConfig pd_app_viewport_controller_local_make_visual_config(
+    const PdEditorVisualState* visual_state)
+{
+    PdRenderVisualConfig visual_config = pd_render_visual_config_default();
+
+    if (visual_state == 0) {
+        return visual_config;
+    }
+
+    visual_config.background_color = pd_app_viewport_controller_local_make_color(visual_state->background_color);
+    visual_config.light_direction = pd_app_viewport_controller_local_make_vector3(visual_state->light_direction);
+    visual_config.dark_intensity = visual_state->dark_intensity;
+    visual_config.edge_depth_threshold = visual_state->edge_depth_threshold;
+    visual_config.edge_normal_threshold = visual_state->edge_normal_threshold;
+    return visual_config;
+}
+
+static PdRenderShadowConfig pd_app_viewport_controller_local_make_shadow_config(
+    const PdEditorVisualState* visual_state)
+{
+    PdRenderShadowConfig shadow_config = pd_render_shadow_config_default();
+
+    if (visual_state == 0) {
+        return shadow_config;
+    }
+
+    shadow_config.color = pd_app_viewport_controller_local_make_color(visual_state->shadow_color);
+    shadow_config.plane_y = visual_state->shadow_plane_y;
+    shadow_config.offset_x = visual_state->shadow_offset_x;
+    shadow_config.offset_z = visual_state->shadow_offset_z;
+    shadow_config.half_width = visual_state->shadow_half_width;
+    shadow_config.half_depth = visual_state->shadow_half_depth;
+    shadow_config.skew_x = visual_state->shadow_skew_x;
+    return shadow_config;
+}
+
 static Mesh pd_app_viewport_controller_local_make_mesh(const PdRenderMeshBuffer* render_mesh_buffer)
 {
     Mesh mesh = { 0 };
@@ -522,9 +576,9 @@ int main(int argc, char** argv)
     PdAppContextEntity app_context;
     PdEngineWindowConfig window_config = pd_engine_window_config_default();
     PdEngineCameraState camera_state = pd_engine_camera_controller_make_default();
-    PdRenderVisualConfig visual_config = pd_render_visual_config_default();
     PdRenderFaceHighlightConfig face_highlight_config = pd_render_face_highlight_config_default();
-    PdRenderShadowConfig shadow_config = pd_render_shadow_config_default();
+    PdRenderVisualConfig visual_config;
+    PdRenderShadowConfig shadow_config;
     PdRenderHardstepShaderConfig shader_config = pd_render_hardstep_shader_config_default();
     PdRenderDepthShaderConfig depth_shader_config = pd_render_depth_shader_config_default();
     PdRenderNormalShaderConfig normal_shader_config = pd_render_normal_shader_config_default();
@@ -589,8 +643,12 @@ int main(int argc, char** argv)
     edge_shader = LoadShader(edge_shader_config.vertex_shader_path, edge_shader_config.fragment_shader_path);
     light_direction_location = GetShaderLocation(hardstep_shader, "lightDirection");
     dark_intensity_location = GetShaderLocation(hardstep_shader, "darkIntensity");
-    SetShaderValue(hardstep_shader, light_direction_location, &shader_config.light_direction, SHADER_UNIFORM_VEC3);
-    SetShaderValue(hardstep_shader, dark_intensity_location, &shader_config.dark_intensity, SHADER_UNIFORM_FLOAT);
+    visual_config = pd_app_viewport_controller_local_make_visual_config(&app_context.visual_state);
+    shadow_config = pd_app_viewport_controller_local_make_shadow_config(&app_context.visual_state);
+    shader_config.light_direction = visual_config.light_direction;
+    shader_config.dark_intensity = visual_config.dark_intensity;
+    SetShaderValue(hardstep_shader, light_direction_location, &visual_config.light_direction, SHADER_UNIFORM_VEC3);
+    SetShaderValue(hardstep_shader, dark_intensity_location, &visual_config.dark_intensity, SHADER_UNIFORM_FLOAT);
     edge_normal_texture_location = GetShaderLocation(edge_shader, "normalTexture");
     edge_depth_texture_location = GetShaderLocation(edge_shader, "depthTexture");
     edge_texel_size_location = GetShaderLocation(edge_shader, "texelSize");
