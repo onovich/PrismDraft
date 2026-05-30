@@ -47,6 +47,46 @@ add_test(
   COMMAND pd_core_result_test
 )
 
+add_executable(pd_core_mesh_entity_test
+  tests/core/pd_core_mesh_entity_test.c
+)
+
+target_link_libraries(pd_core_mesh_entity_test
+  PRIVATE
+    prismdraft_core
+)
+
+if(MSVC)
+  target_compile_options(pd_core_mesh_entity_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_core_mesh_entity_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_core_mesh_entity_test
+  COMMAND pd_core_mesh_entity_test
+)
+
+add_executable(pd_core_mesh_storage_config_test
+  tests/core/pd_core_mesh_storage_config_test.c
+)
+
+target_link_libraries(pd_core_mesh_storage_config_test
+  PRIVATE
+    prismdraft_core
+)
+
+if(MSVC)
+  target_compile_options(pd_core_mesh_storage_config_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_core_mesh_storage_config_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_core_mesh_storage_config_test
+  COMMAND pd_core_mesh_storage_config_test
+)
+
 add_test(
   NAME prismdraft_architecture_check
   COMMAND powershell -NoProfile -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/tools/CheckArchitecture.ps1

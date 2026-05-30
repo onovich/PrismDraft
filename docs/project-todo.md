@@ -22,8 +22,8 @@ The first milestone is not a full editor. It is a clean, testable foundation: C1
 ## Phase 1: Memory Skeleton And Viewport
 
 - [x] Define core result/status types.
-- [ ] Define `PdCoreMeshEntity`, `PdCoreVertexEntity`, `PdCoreHalfEdgeEntity`, and `PdCoreFaceEntity`.
-- [ ] Define mesh storage config and explicit count/capacity ownership rules.
+- [x] Define `PdCoreMeshEntity`, `PdCoreVertexEntity`, `PdCoreHalfEdgeEntity`, and `PdCoreFaceEntity`.
+- [x] Define mesh storage config and explicit count/capacity ownership rules.
 - [ ] Implement mesh init/free/reserve routines.
 - [ ] Implement mesh invariant validator for index ranges, closed face loops, and pair symmetry.
 - [ ] Add a deterministic cube half-edge fixture.
