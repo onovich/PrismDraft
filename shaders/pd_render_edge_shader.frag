@@ -24,24 +24,40 @@ vec3 sampleNormal(vec2 offset)
 void main()
 {
     vec4 baseColor = texture(texture0, fragTexCoord);
-    float depthCenter = sampleDepth(vec2(0.0, 0.0));
-    vec3 normalCenter = sampleNormal(vec2(0.0, 0.0));
+    float depthLeft = sampleDepth(vec2(-1.0, 0.0));
+    float depthRight = sampleDepth(vec2(1.0, 0.0));
+    float depthUp = sampleDepth(vec2(0.0, -1.0));
+    float depthDown = sampleDepth(vec2(0.0, 1.0));
+    float depthUpLeft = sampleDepth(vec2(-1.0, -1.0));
+    float depthUpRight = sampleDepth(vec2(1.0, -1.0));
+    float depthDownLeft = sampleDepth(vec2(-1.0, 1.0));
+    float depthDownRight = sampleDepth(vec2(1.0, 1.0));
 
-    float depthDelta = 0.0;
-    depthDelta = max(depthDelta, abs(depthCenter - sampleDepth(vec2(1.0, 0.0))));
-    depthDelta = max(depthDelta, abs(depthCenter - sampleDepth(vec2(-1.0, 0.0))));
-    depthDelta = max(depthDelta, abs(depthCenter - sampleDepth(vec2(0.0, 1.0))));
-    depthDelta = max(depthDelta, abs(depthCenter - sampleDepth(vec2(0.0, -1.0))));
+    vec3 normalLeft = sampleNormal(vec2(-1.0, 0.0));
+    vec3 normalRight = sampleNormal(vec2(1.0, 0.0));
+    vec3 normalUp = sampleNormal(vec2(0.0, -1.0));
+    vec3 normalDown = sampleNormal(vec2(0.0, 1.0));
+    vec3 normalUpLeft = sampleNormal(vec2(-1.0, -1.0));
+    vec3 normalUpRight = sampleNormal(vec2(1.0, -1.0));
+    vec3 normalDownLeft = sampleNormal(vec2(-1.0, 1.0));
+    vec3 normalDownRight = sampleNormal(vec2(1.0, 1.0));
 
-    float normalDelta = 0.0;
-    normalDelta = max(normalDelta, length(normalCenter - sampleNormal(vec2(1.0, 0.0))));
-    normalDelta = max(normalDelta, length(normalCenter - sampleNormal(vec2(-1.0, 0.0))));
-    normalDelta = max(normalDelta, length(normalCenter - sampleNormal(vec2(0.0, 1.0))));
-    normalDelta = max(normalDelta, length(normalCenter - sampleNormal(vec2(0.0, -1.0))));
+    float depthGradientX = (depthUpRight + 2.0 * depthRight + depthDownRight) -
+                           (depthUpLeft + 2.0 * depthLeft + depthDownLeft);
+    float depthGradientY = (depthDownLeft + 2.0 * depthDown + depthDownRight) -
+                           (depthUpLeft + 2.0 * depthUp + depthUpRight);
 
-    float edgeMask = step(edgeDepthThreshold, depthDelta) + step(edgeNormalThreshold, normalDelta);
-    edgeMask = clamp(edgeMask, 0.0, 1.0);
+    vec3 normalGradientX = (normalUpRight + 2.0 * normalRight + normalDownRight) -
+                           (normalUpLeft + 2.0 * normalLeft + normalDownLeft);
+    vec3 normalGradientY = (normalDownLeft + 2.0 * normalDown + normalDownRight) -
+                           (normalUpLeft + 2.0 * normalUp + normalUpRight);
 
-    vec3 edgeColor = vec3(0.16, 0.16, 0.2);
-    finalColor = vec4(mix(baseColor.rgb, edgeColor, edgeMask * 0.55), baseColor.a);
+    float depthEdge = length(vec2(depthGradientX, depthGradientY));
+    float normalEdge = length(normalGradientX) + length(normalGradientY);
+    float depthMask = smoothstep(edgeDepthThreshold * 0.75, edgeDepthThreshold * 1.85, depthEdge);
+    float normalMask = smoothstep(edgeNormalThreshold * 0.75, edgeNormalThreshold * 1.85, normalEdge);
+    float edgeMask = clamp(max(depthMask, normalMask), 0.0, 1.0);
+
+    vec3 edgeColor = vec3(0.11, 0.12, 0.16);
+    finalColor = vec4(mix(baseColor.rgb, edgeColor, edgeMask * 0.42), baseColor.a);
 }

@@ -71,3 +71,24 @@ Issues:
 Follow-up target:
 
 - Treat this as Phase 5 visual polish before expanding the interactive editor surface. Fix render-target resize handling, edge alignment, and anti-aliasing, then capture a new `captures/phase2_cube.png` and compare again with `sample/`.
+
+## Phase 5 Edge And Anti-Aliasing Check
+
+Screenshot command:
+
+```powershell
+tools\SmokeViewport.cmd
+```
+
+Expected output:
+
+```text
+captures/phase2_cube.png
+```
+
+Current comparison:
+
+- Pass: The viewport renders through a 2x internal target and downsamples to the window, improving diagonal face boundaries and the hard projected shadow edge.
+- Pass: The edge shader uses an 8-neighbor smooth edge mask instead of binary four-neighbor `step`, reducing stair-step artifacts and hard overpaint.
+- Pass: The output preserves flat poster-like surfaces, hard geometric silhouette, and the designed shadow shape from the visual references.
+- Watch: Edge placement should be re-checked by the user in the interactive smoke, especially at the center vertical crease and high-contrast face boundaries.

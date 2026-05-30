@@ -18,6 +18,8 @@
 #include <stddef.h>
 #include <string.h>
 
+static const int PD_APP_VIEWPORT_CONTROLLER_RENDER_SCALE = 2;
+
 static int pd_app_viewport_controller_local_has_argument(int argc, char** argv, const char* expected_argument)
 {
     int argument_index;
@@ -93,23 +95,30 @@ static PdCoreResult pd_app_viewport_controller_local_resize_targets(
     int edge_texel_size_location,
     Vector2* edge_texel_size)
 {
+    int render_width;
+    int render_height;
+
     if (target_controller == 0 || edge_texel_size == 0 || width <= 0 || height <= 0) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
-    if (target_controller->config.width == width && target_controller->config.height == height &&
+    render_width = width * PD_APP_VIEWPORT_CONTROLLER_RENDER_SCALE;
+    render_height = height * PD_APP_VIEWPORT_CONTROLLER_RENDER_SCALE;
+
+    if (target_controller->config.width == render_width && target_controller->config.height == render_height &&
         pd_render_target_controller_is_ready(target_controller)) {
         return PD_CORE_RESULT_OK;
     }
 
     pd_render_target_controller_free(target_controller);
-    if (pd_render_target_controller_init(target_controller, pd_render_target_config_make(width, height)) !=
+    if (pd_render_target_controller_init(target_controller, pd_render_target_config_make(render_width, render_height)) !=
         PD_CORE_RESULT_OK) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
-    edge_texel_size->x = 1.0f / (float)width;
-    edge_texel_size->y = 1.0f / (float)height;
+    SetTextureFilter(target_controller->color_depth_target.texture, TEXTURE_FILTER_BILINEAR);
+    edge_texel_size->x = 1.0f / (float)render_width;
+    edge_texel_size->y = 1.0f / (float)render_height;
     SetShaderValue(edge_shader, edge_texel_size_location, edge_texel_size, SHADER_UNIFORM_VEC2);
     return PD_CORE_RESULT_OK;
 }
@@ -191,6 +200,7 @@ int main(int argc, char** argv)
     int edge_normal_threshold_location;
     Vector2 edge_texel_size;
     Rectangle screen_source;
+    Rectangle screen_destination;
     Vector2 screen_position = { 0.0f, 0.0f };
     int is_interactive = pd_app_viewport_controller_local_has_argument(argc, argv, "--interactive");
     int run_result = 0;
@@ -290,12 +300,19 @@ int main(int argc, char** argv)
                                      0.0f,
                                      (float)target_controller.color_depth_target.texture.width,
                                      -(float)target_controller.color_depth_target.texture.height };
+        screen_destination = (Rectangle){ 0.0f, 0.0f, (float)screen_width, (float)screen_height };
         BeginDrawing();
         ClearBackground(visual_config.background_color);
         BeginShaderMode(edge_shader);
         SetShaderValueTexture(edge_shader, edge_normal_texture_location, target_controller.normal_target.texture);
         SetShaderValueTexture(edge_shader, edge_depth_texture_location, target_controller.depth_target.texture);
-        DrawTextureRec(target_controller.color_depth_target.texture, screen_source, screen_position, WHITE);
+        DrawTexturePro(
+            target_controller.color_depth_target.texture,
+            screen_source,
+            screen_destination,
+            screen_position,
+            0.0f,
+            WHITE);
         EndShaderMode();
         EndDrawing();
     } while (is_interactive && !WindowShouldClose());
