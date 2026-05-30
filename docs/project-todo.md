@@ -60,7 +60,7 @@ The current milestone is delivery: independent export buffers, glTF/GLB serializ
 - [x] Define flattened export mesh data independent of render buffers.
 - [x] Write glTF 2.0 JSON export with `POSITION`, `NORMAL`, and `COLOR_0`.
 - [x] Write GLB binary export.
-- [ ] Add import checks in an external viewer or documented validation path.
+- [x] Add import checks in an external viewer or documented validation path.
 - [ ] Define object-level PRS animation data.
 - [ ] Add a minimal timeline playback controller.
 
