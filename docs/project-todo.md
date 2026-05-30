@@ -4,9 +4,9 @@ This TODO translates the design mirror and visual references into small Codex-si
 
 ## Current Focus
 
-Phase 4: Export and demonstration.
+Phase 5: Interactive editor smoke and visual polish.
 
-The current milestone is delivery: independent export buffers, glTF/GLB serialization, validation path, and a minimal object-level animation timeline.
+The current milestone is turning the proven data/render/export pieces into a user-testable editor loop, while fixing the viewport polish issues found in manual smoke.
 
 ## Phase 0: Preparation
 
@@ -63,6 +63,18 @@ The current milestone is delivery: independent export buffers, glTF/GLB serializ
 - [x] Add import checks in an external viewer or documented validation path.
 - [x] Define object-level PRS animation data.
 - [x] Add a minimal timeline playback controller.
+
+## Phase 5: Interactive Editor Smoke And Visual Polish
+
+- [ ] Add a process lifecycle smoke check that verifies the viewport process exits after the window closes.
+- [ ] Support viewport window resizing by recreating render targets and updating edge shader texel size.
+- [ ] Fix edge compositing so silhouette and crease lines read as outer/structural boundaries instead of face-overpaint artifacts.
+- [ ] Add anti-aliasing for diagonal face boundaries, edge overlay, and hard projected shadow.
+- [ ] Re-run visual comparison against `sample/` after edge alignment and anti-aliasing changes.
+- [ ] Add an interactive editor smoke mode for face picking and selection feedback.
+- [ ] Add keyboard or tool commands in the editor smoke for inset, extrude, bevel, and loop cut.
+- [ ] Add an app-level export smoke path for glTF and GLB from the current mesh.
+- [ ] Add a minimal app-level timeline demo that applies PRS animation to an object.
 
 ## Always-On Checks
 
