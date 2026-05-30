@@ -1,4 +1,26 @@
-﻿# AGENTS.md
+# AGENTS.md
+
+## Global Codex Notes
+
+### Skill Creation And Installation
+
+When creating or updating local Codex skills, make the skill files compatible with both model-side loading and the Codex UI skill picker.
+
+- Write `SKILL.md` and `agents/openai.yaml` as UTF-8 without BOM. PowerShell `Set-Content -Encoding UTF8` can add a BOM on this Windows setup; prefer `.NET` `UTF8Encoding($false)` or verify bytes after writing.
+- A skill may work through `$skill-name` while still failing to appear in the UI `@` picker if metadata files contain a BOM or stale plugin cache is being scanned.
+- Compare against known-good skills such as `inscape-dev-host-smoke`: both `SKILL.md` and `agents/openai.yaml` should start directly with `---` or `interface:`, not `EF BB BF`.
+- For plugin-packaged skills, bump the plugin version/cachebuster, reinstall with the real Codex CLI from `config.toml` (`CODEX_CLI_PATH`), and remove stale cache versions for that plugin when testing UI discovery.
+- After installing or changing skills, restart Codex and test both paths: explicit `$SkillName` loading and UI `@SkillName` autocomplete.
+- Prefer memorable no-hyphen display names for skills users should invoke from the UI, for example `InitFlow`, `GitFlow`, and `OpsFlow`, while keeping lower-case folder names valid.
+
+Useful byte check on Windows:
+
+```powershell
+$bytes = [System.IO.File]::ReadAllBytes('C:\path\to\SKILL.md')
+$bytes[0..2] -join ' '
+```
+
+If the first three bytes are `239 187 191`, the file has a UTF-8 BOM and should be rewritten without BOM.
 
 <!-- codex-init-flow: initialized -->
 
