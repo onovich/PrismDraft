@@ -4,9 +4,9 @@ This TODO translates the design mirror and visual references into small Codex-si
 
 ## Current Focus
 
-Phase 3: Modeling tools.
+Phase 4: Export and demonstration.
 
-The current milestone is the first editable loop: selection state, picking, face highlighting, and tightly validated hard-surface topology operations.
+The current milestone is delivery: independent export buffers, glTF/GLB serialization, validation path, and a minimal object-level animation timeline.
 
 ## Phase 0: Preparation
 
@@ -57,7 +57,7 @@ The current milestone is the first editable loop: selection state, picking, face
 
 ## Phase 4: Export And Demonstration
 
-- [ ] Define flattened export mesh data independent of render buffers.
+- [x] Define flattened export mesh data independent of render buffers.
 - [ ] Write glTF 2.0 JSON export with `POSITION`, `NORMAL`, and `COLOR_0`.
 - [ ] Write GLB binary export.
 - [ ] Add import checks in an external viewer or documented validation path.

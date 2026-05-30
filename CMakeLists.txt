@@ -143,6 +143,26 @@ else()
   target_compile_options(prismdraft_render PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
+add_library(prismdraft_export STATIC
+  src/export/pd_export_mesh_buffer.c
+)
+
+target_include_directories(prismdraft_export
+  PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(prismdraft_export
+  PUBLIC
+    prismdraft_core
+)
+
+if(MSVC)
+  target_compile_options(prismdraft_export PRIVATE /W4 /WX)
+else()
+  target_compile_options(prismdraft_export PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 add_executable(pd_core_result_test
   tests/core/pd_core_result_test.c
 )
@@ -661,6 +681,26 @@ endif()
 add_test(
   NAME pd_render_target_controller_test
   COMMAND pd_render_target_controller_test
+)
+
+add_executable(pd_export_mesh_buffer_test
+  tests/export/pd_export_mesh_buffer_test.c
+)
+
+target_link_libraries(pd_export_mesh_buffer_test
+  PRIVATE
+    prismdraft_export
+)
+
+if(MSVC)
+  target_compile_options(pd_export_mesh_buffer_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_export_mesh_buffer_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_export_mesh_buffer_test
+  COMMAND pd_export_mesh_buffer_test
 )
 
 add_executable(prismdraft_phase1_viewport
