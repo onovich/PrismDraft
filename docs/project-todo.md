@@ -4,9 +4,9 @@ This TODO translates the design mirror and visual references into small Codex-si
 
 ## Current Focus
 
-Phase 5: Interactive editor smoke and visual polish.
+Phase 5: Viewport polish and interaction foundation.
 
-The current milestone is turning the proven data/render/export pieces into a user-testable editor loop, while fixing the viewport polish issues found in manual smoke.
+The current milestone is turning the proven data/render/export pieces into a user-testable editor loop, while fixing the viewport polish issues found in manual smoke and making the expected basic interactions explicit.
 
 ## Phase 0: Preparation
 
@@ -64,15 +64,27 @@ The current milestone is turning the proven data/render/export pieces into a use
 - [x] Define object-level PRS animation data.
 - [x] Add a minimal timeline playback controller.
 
-## Phase 5: Interactive Editor Smoke And Visual Polish
+## Phase 5: Viewport Polish And Interaction Foundation
 
-- [ ] Add a process lifecycle smoke check that verifies the viewport process exits after the window closes.
+- [x] Manually verify that the viewport process exits after the window closes.
+- [ ] Add an automated process lifecycle smoke check that verifies the viewport process exits after the window closes.
 - [ ] Support viewport window resizing by recreating render targets and updating edge shader texel size.
 - [ ] Fix edge compositing so silhouette and crease lines read as outer/structural boundaries instead of face-overpaint artifacts.
 - [ ] Add anti-aliasing for diagonal face boundaries, edge overlay, and hard projected shadow.
 - [ ] Re-run visual comparison against `sample/` after edge alignment and anti-aliasing changes.
+- [ ] Add camera orbit, pan, and zoom controls for inspecting the model.
 - [ ] Add an interactive editor smoke mode for face picking and selection feedback.
+
+## Phase 6: Basic Editor Controls
+
+- [ ] Add object transform state for move, rotate, and scale.
+- [ ] Add transform controls or keyboard shortcuts for move, rotate, and scale.
 - [ ] Add keyboard or tool commands in the editor smoke for inset, extrude, bevel, and loop cut.
+- [ ] Add editable face color state and a simple face color adjustment control.
+- [ ] Add editable background color state and a simple background color adjustment control.
+- [ ] Add editable outline style config, including outline thickness and edge threshold controls.
+- [ ] Add editable lighting config, including light direction, dark intensity, shadow strength, and shadow offset controls.
+- [ ] Add a compact on-screen debug/control overlay for current tool, selection, and visual parameters.
 - [ ] Add an app-level export smoke path for glTF and GLB from the current mesh.
 - [ ] Add a minimal app-level timeline demo that applies PRS animation to an object.
 
