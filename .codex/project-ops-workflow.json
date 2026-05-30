@@ -77,7 +77,8 @@
 
                                               ],
                                      "commands":  [
-                                                     "tools\\SmokeViewport.cmd"
+                                                     "tools\\SmokeViewport.cmd",
+                                                     "tools\\SmokeExport.cmd"
                                                   ]
                                  },
                        "package":  {

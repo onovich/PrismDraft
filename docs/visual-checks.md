@@ -140,3 +140,23 @@ Current comparison:
 - Pass: Interactive mode draws a compact state overlay for selection, transform, color, outline, lighting, and shadow values without changing the automated screenshot baseline.
 - Pass: Interactive modeling shortcuts call the existing core inset, extrude, bevel, and loop cut controllers, then rebuild the viewport mesh and selected-face highlight.
 - Watch: The user still needs to manually re-check edge placement and anti-aliasing in the interactive viewport after the Phase 5 render pass.
+
+## Phase 6 Export Smoke
+
+Command:
+
+```powershell
+tools\SmokeExport.cmd
+```
+
+Expected output:
+
+```text
+captures/phase6_export_smoke.gltf
+captures/phase6_export_smoke.glb
+```
+
+Current comparison:
+
+- Pass: The smoke initializes the app context, applies an editor modeling command to the selected face, flattens the edited mesh through the export buffer, and writes both glTF and GLB files.
+- Pass: The project smoke workflow runs viewport screenshot smoke and export smoke as separate commands.

@@ -913,6 +913,22 @@ add_test(
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
 
+add_executable(prismdraft_export_smoke
+  src/app/pd_app_export_smoke_controller.c
+)
+
+target_link_libraries(prismdraft_export_smoke
+  PRIVATE
+    prismdraft_app
+    prismdraft_export
+)
+
+if(MSVC)
+  target_compile_options(prismdraft_export_smoke PRIVATE /W4 /WX)
+else()
+  target_compile_options(prismdraft_export_smoke PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 add_custom_target(prismdraft_architecture_check
   COMMAND powershell -NoProfile -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/tools/CheckArchitecture.ps1
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}

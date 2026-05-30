@@ -25,7 +25,7 @@ These items track the issues and expected controls from manual smoke. Do not rem
 - [x] Add lighting controls for light direction, dark intensity, shadow strength, and shadow offset.
 - [x] Add a compact overlay that exposes current selection, transform, color, outline, and lighting values.
 - [x] Wire modeling commands into interactive smoke: inset, extrude, bevel, and loop cut.
-- [ ] Add app-level glTF and GLB export smoke from the edited mesh.
+- [x] Add app-level glTF and GLB export smoke from the edited mesh.
 
 ## Phase 0: Preparation
 
@@ -114,7 +114,7 @@ These items track the issues and expected controls from manual smoke. Do not rem
 - [x] Add editable outline style config, including outline thickness and edge threshold controls.
 - [x] Add editable lighting config, including light direction, dark intensity, shadow strength, and shadow offset controls.
 - [x] Add a compact on-screen debug/control overlay for current tool, selection, and visual parameters.
-- [ ] Add an app-level export smoke path for glTF and GLB from the current mesh.
+- [x] Add an app-level export smoke path for glTF and GLB from the current mesh.
 - [ ] Add a minimal app-level timeline demo that applies PRS animation to an object.
 
 ### Phase 6 Implementation Order
