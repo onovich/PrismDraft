@@ -144,6 +144,7 @@ else()
 endif()
 
 add_library(prismdraft_export STATIC
+  src/export/pd_export_gltf_writer.c
   src/export/pd_export_mesh_buffer.c
 )
 
@@ -701,6 +702,26 @@ endif()
 add_test(
   NAME pd_export_mesh_buffer_test
   COMMAND pd_export_mesh_buffer_test
+)
+
+add_executable(pd_export_gltf_writer_test
+  tests/export/pd_export_gltf_writer_test.c
+)
+
+target_link_libraries(pd_export_gltf_writer_test
+  PRIVATE
+    prismdraft_export
+)
+
+if(MSVC)
+  target_compile_options(pd_export_gltf_writer_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_export_gltf_writer_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_export_gltf_writer_test
+  COMMAND pd_export_gltf_writer_test
 )
 
 add_executable(prismdraft_phase1_viewport
