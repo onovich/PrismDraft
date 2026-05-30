@@ -28,6 +28,7 @@ add_library(prismdraft_core STATIC
   src/core/pd_core_face_bevel_controller.c
   src/core/pd_core_face_extrude_controller.c
   src/core/pd_core_face_inset_controller.c
+  src/core/pd_core_face_loop_cut_controller.c
   src/core/pd_core_mesh_storage_controller.c
   src/core/pd_core_mesh_validator.c
   src/core/pd_core_result_entity.c
@@ -320,6 +321,26 @@ endif()
 add_test(
   NAME pd_core_face_bevel_controller_test
   COMMAND pd_core_face_bevel_controller_test
+)
+
+add_executable(pd_core_face_loop_cut_controller_test
+  tests/core/pd_core_face_loop_cut_controller_test.c
+)
+
+target_link_libraries(pd_core_face_loop_cut_controller_test
+  PRIVATE
+    prismdraft_core
+)
+
+if(MSVC)
+  target_compile_options(pd_core_face_loop_cut_controller_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_core_face_loop_cut_controller_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_core_face_loop_cut_controller_test
+  COMMAND pd_core_face_loop_cut_controller_test
 )
 
 add_executable(pd_app_lifecycle_controller_test
