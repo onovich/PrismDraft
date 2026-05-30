@@ -24,7 +24,7 @@ These items track the issues and expected controls from manual smoke. Do not rem
 - [x] Add outline thickness and edge-threshold adjustment controls.
 - [x] Add lighting controls for light direction, dark intensity, shadow strength, and shadow offset.
 - [x] Add a compact overlay that exposes current selection, transform, color, outline, and lighting values.
-- [ ] Wire modeling commands into interactive smoke: inset, extrude, bevel, and loop cut.
+- [x] Wire modeling commands into interactive smoke: inset, extrude, bevel, and loop cut.
 - [ ] Add app-level glTF and GLB export smoke from the edited mesh.
 
 ## Phase 0: Preparation
@@ -108,7 +108,7 @@ These items track the issues and expected controls from manual smoke. Do not rem
 
 - [x] Add object transform state for move, rotate, and scale.
 - [x] Add transform controls or keyboard shortcuts for move, rotate, and scale.
-- [ ] Add keyboard or tool commands in the editor smoke for inset, extrude, bevel, and loop cut.
+- [x] Add keyboard or tool commands in the editor smoke for inset, extrude, bevel, and loop cut.
 - [x] Add editable face color state and a simple face color adjustment control.
 - [x] Add editable background color state and a simple background color adjustment control.
 - [x] Add editable outline style config, including outline thickness and edge threshold controls.

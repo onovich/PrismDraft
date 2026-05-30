@@ -127,6 +127,10 @@ Controls:
 - `O` / `P`: decrease or increase shadow strength.
 - `K` / `L`: move the shadow left or right.
 - `N` / `M`: move the shadow backward or forward.
+- `1`: apply inset to the selected face.
+- `2`: apply extrude to the selected face.
+- `3`: apply bevel to the selected face.
+- `4`: apply loop cut to the selected quad face.
 
 Current comparison:
 
@@ -134,5 +138,5 @@ Current comparison:
 - Pass: The default screenshot smoke remains non-interactive and still exits after rendering `captures/phase2_cube.png`.
 - Pass: Face color, background color, outline thickness, edge thresholds, light direction, dark intensity, shadow strength, and shadow offset are editable through keyboard controls.
 - Pass: Interactive mode draws a compact state overlay for selection, transform, color, outline, lighting, and shadow values without changing the automated screenshot baseline.
-- Watch: Modeling command shortcuts are still Phase 6 work.
+- Pass: Interactive modeling shortcuts call the existing core inset, extrude, bevel, and loop cut controllers, then rebuild the viewport mesh and selected-face highlight.
 - Watch: The user still needs to manually re-check edge placement and anti-aliasing in the interactive viewport after the Phase 5 render pass.

@@ -14,6 +14,7 @@ static void pd_app_lifecycle_controller_test_local_init_builds_active_cube_mesh(
     assert(app_context.active_mesh.half_edge_count == 24u);
     assert(app_context.active_mesh.face_count == 6u);
     assert(app_context.selection_state.kind == PD_EDITOR_SELECTION_KIND_NONE);
+    assert(app_context.tool_state.active_tool == PD_EDITOR_TOOL_KIND_VIEW);
     assert(app_context.transform_state.position[0] == 0.0f);
     assert(app_context.transform_state.rotation_degrees[1] == 0.0f);
     assert(app_context.transform_state.scale[2] == 1.0f);

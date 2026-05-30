@@ -1,5 +1,6 @@
 #include "prismdraft/app/pd_app_lifecycle_controller.h"
 #include "prismdraft/core/pd_core_mesh_entity.h"
+#include "prismdraft/editor/pd_editor_modeling_service.h"
 #include "prismdraft/editor/pd_editor_pick_service.h"
 #include "prismdraft/engine/pd_engine_camera_controller.h"
 #include "prismdraft/engine/pd_engine_window_config.h"
@@ -275,6 +276,19 @@ static void pd_app_viewport_controller_local_update_transform(PdEditorTransformS
     }
 }
 
+static void pd_app_viewport_controller_local_update_transform_tool(PdEditorToolState* tool_state)
+{
+    if (tool_state == 0) {
+        return;
+    }
+
+    if (IsKeyDown(KEY_A) || IsKeyDown(KEY_D) || IsKeyDown(KEY_W) || IsKeyDown(KEY_S) || IsKeyDown(KEY_Q) ||
+        IsKeyDown(KEY_E) || IsKeyDown(KEY_R) || IsKeyDown(KEY_F) || IsKeyDown(KEY_X) || IsKeyDown(KEY_Z) ||
+        IsKeyPressed(KEY_T)) {
+        (void)pd_editor_tool_state_set_active(tool_state, PD_EDITOR_TOOL_KIND_TRANSFORM);
+    }
+}
+
 static Color pd_app_viewport_controller_local_make_color(const uint8_t color[4])
 {
     if (color == 0) {
@@ -406,6 +420,101 @@ static PdCoreResult pd_app_viewport_controller_local_apply_selected_face_color(P
     return PD_CORE_RESULT_OK;
 }
 
+static PdCoreResult pd_app_viewport_controller_local_get_selected_face(
+    const PdAppContextEntity* app_context,
+    uint32_t* face_index)
+{
+    if (app_context == 0 || face_index == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (app_context->selection_state.kind != PD_EDITOR_SELECTION_KIND_FACE ||
+        app_context->selection_state.primary_index >= app_context->active_mesh.face_count) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    *face_index = app_context->selection_state.primary_index;
+    return PD_CORE_RESULT_OK;
+}
+
+static PdCoreResult pd_app_viewport_controller_local_apply_modeling_command(
+    PdAppContextEntity* app_context,
+    PdEditorToolKind tool_kind)
+{
+    uint32_t face_index;
+    PdCoreResult result;
+
+    if (app_context == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    result = pd_app_viewport_controller_local_get_selected_face(app_context, &face_index);
+    if (result != PD_CORE_RESULT_OK) {
+        app_context->tool_state.last_result = result;
+        return result;
+    }
+
+    result = pd_editor_tool_state_set_active(&app_context->tool_state, tool_kind);
+    if (result != PD_CORE_RESULT_OK) {
+        app_context->tool_state.last_result = result;
+        return result;
+    }
+
+    result = pd_editor_modeling_service_apply(
+        &app_context->active_mesh,
+        face_index,
+        tool_kind,
+        pd_editor_modeling_service_config_default());
+
+    app_context->tool_state.last_result = result;
+    return result;
+}
+
+static PdCoreResult pd_app_viewport_controller_local_update_modeling_controls(
+    PdAppContextEntity* app_context,
+    int* needs_cube_model_rebuild,
+    int* needs_face_highlight_rebuild)
+{
+    PdEditorToolKind tool_kind = PD_EDITOR_TOOL_KIND_VIEW;
+    int has_modeling_command = 0;
+
+    if (app_context == 0 || needs_cube_model_rebuild == 0 || needs_face_highlight_rebuild == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (IsKeyPressed(KEY_ONE)) {
+        tool_kind = PD_EDITOR_TOOL_KIND_INSET;
+        has_modeling_command = 1;
+    }
+
+    if (IsKeyPressed(KEY_TWO)) {
+        tool_kind = PD_EDITOR_TOOL_KIND_EXTRUDE;
+        has_modeling_command = 1;
+    }
+
+    if (IsKeyPressed(KEY_THREE)) {
+        tool_kind = PD_EDITOR_TOOL_KIND_BEVEL;
+        has_modeling_command = 1;
+    }
+
+    if (IsKeyPressed(KEY_FOUR)) {
+        tool_kind = PD_EDITOR_TOOL_KIND_LOOP_CUT;
+        has_modeling_command = 1;
+    }
+
+    if (!has_modeling_command) {
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (pd_app_viewport_controller_local_apply_modeling_command(app_context, tool_kind) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    *needs_cube_model_rebuild = 1;
+    *needs_face_highlight_rebuild = 1;
+    return PD_CORE_RESULT_OK;
+}
+
 static PdCoreResult pd_app_viewport_controller_local_update_visual_controls(
     PdAppContextEntity* app_context,
     int* needs_cube_model_rebuild)
@@ -417,6 +526,7 @@ static PdCoreResult pd_app_viewport_controller_local_update_visual_controls(
     *needs_cube_model_rebuild = 0;
 
     if (IsKeyPressed(KEY_C)) {
+        (void)pd_editor_tool_state_set_active(&app_context->tool_state, PD_EDITOR_TOOL_KIND_COLOR);
         if (pd_editor_visual_state_cycle_face_color(&app_context->visual_state, 1) != PD_CORE_RESULT_OK ||
             pd_app_viewport_controller_local_apply_selected_face_color(app_context) != PD_CORE_RESULT_OK) {
             return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
@@ -595,8 +705,11 @@ static void pd_app_viewport_controller_local_draw_overlay(
     }
 
     transform_state = &app_context->transform_state;
-    DrawRectangle(12, 12, 372, 156, (Color){ 20u, 23u, 28u, 168u });
-    DrawRectangleLines(12, 12, 372, 156, (Color){ 245u, 245u, 245u, 64u });
+    DrawRectangle(12, 12, 372, 170, (Color){ 20u, 23u, 28u, 168u });
+    DrawRectangleLines(12, 12, 372, 170, (Color){ 245u, 245u, 245u, 64u });
+
+    (void)snprintf(line, sizeof(line), "tool %s", pd_editor_tool_state_get_name(app_context->tool_state.active_tool));
+    pd_app_viewport_controller_local_draw_overlay_line(line, &y);
 
     if (app_context->selection_state.kind == PD_EDITOR_SELECTION_KIND_FACE) {
         (void)snprintf(
@@ -919,6 +1032,7 @@ int main(int argc, char** argv)
     int is_interactive = pd_app_viewport_controller_local_has_argument(argc, argv, "--interactive");
     int has_face_highlight_model = 0;
     int needs_cube_model_rebuild = 0;
+    int needs_face_highlight_rebuild = 0;
     int run_result = 0;
 
     if (pd_app_lifecycle_controller_init(&app_context) != PD_CORE_RESULT_OK) {
@@ -1004,11 +1118,22 @@ int main(int argc, char** argv)
         int screen_height = GetScreenHeight();
 
         if (is_interactive) {
+            needs_cube_model_rebuild = 0;
+            needs_face_highlight_rebuild = 0;
             pd_app_viewport_controller_local_update_camera(&camera_state);
+            pd_app_viewport_controller_local_update_transform_tool(&app_context.tool_state);
             pd_app_viewport_controller_local_update_transform(&app_context.transform_state);
             if (pd_app_viewport_controller_local_update_visual_controls(
                     &app_context,
                     &needs_cube_model_rebuild) != PD_CORE_RESULT_OK) {
+                run_result = 1;
+                break;
+            }
+
+            if (pd_app_viewport_controller_local_update_modeling_controls(
+                    &app_context,
+                    &needs_cube_model_rebuild,
+                    &needs_face_highlight_rebuild) != PD_CORE_RESULT_OK) {
                 run_result = 1;
                 break;
             }
@@ -1018,6 +1143,18 @@ int main(int argc, char** argv)
                     &render_mesh_buffer,
                     &cube_model,
                     &app_context.active_mesh) != PD_CORE_RESULT_OK) {
+                run_result = 1;
+                break;
+            }
+
+            if (needs_face_highlight_rebuild &&
+                pd_app_viewport_controller_local_rebuild_face_highlight(
+                    &face_highlight_buffer,
+                    &face_highlight_model,
+                    &has_face_highlight_model,
+                    &app_context.active_mesh,
+                    app_context.selection_state.primary_index,
+                    face_highlight_config) != PD_CORE_RESULT_OK) {
                 run_result = 1;
                 break;
             }
