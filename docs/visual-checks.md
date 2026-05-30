@@ -159,4 +159,16 @@ captures/phase6_export_smoke.glb
 Current comparison:
 
 - Pass: The smoke initializes the app context, applies an editor modeling command to the selected face, flattens the edited mesh through the export buffer, and writes both glTF and GLB files.
-- Pass: The project smoke workflow runs viewport screenshot smoke and export smoke as separate commands.
+- Pass: The project smoke workflow runs viewport screenshot smoke, export smoke, and timeline smoke as separate commands.
+
+## Phase 6 Timeline Smoke
+
+Command:
+
+```powershell
+tools\SmokeTimeline.cmd
+```
+
+Current comparison:
+
+- Pass: The smoke initializes the app context, samples a two-keyframe PRS timeline at the midpoint, and applies the sampled pose to the app transform state.

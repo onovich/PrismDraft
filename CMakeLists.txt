@@ -929,6 +929,22 @@ else()
   target_compile_options(prismdraft_export_smoke PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
+add_executable(prismdraft_timeline_demo
+  src/app/pd_app_timeline_demo_controller.c
+)
+
+target_link_libraries(prismdraft_timeline_demo
+  PRIVATE
+    prismdraft_app
+    prismdraft_animation
+)
+
+if(MSVC)
+  target_compile_options(prismdraft_timeline_demo PRIVATE /W4 /WX)
+else()
+  target_compile_options(prismdraft_timeline_demo PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 add_custom_target(prismdraft_architecture_check
   COMMAND powershell -NoProfile -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/tools/CheckArchitecture.ps1
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
