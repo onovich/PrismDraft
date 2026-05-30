@@ -83,6 +83,7 @@ else()
 endif()
 
 add_library(prismdraft_render STATIC
+  src/render/pd_render_hardstep_shader.c
   src/render/pd_render_mesh_buffer.c
 )
 
@@ -94,6 +95,7 @@ target_include_directories(prismdraft_render
 target_link_libraries(prismdraft_render
   PUBLIC
     prismdraft_core
+    raylib
 )
 
 if(MSVC)
@@ -300,6 +302,26 @@ endif()
 add_test(
   NAME pd_render_mesh_buffer_test
   COMMAND pd_render_mesh_buffer_test
+)
+
+add_executable(pd_render_hardstep_shader_test
+  tests/render/pd_render_hardstep_shader_test.c
+)
+
+target_link_libraries(pd_render_hardstep_shader_test
+  PRIVATE
+    prismdraft_render
+)
+
+if(MSVC)
+  target_compile_options(pd_render_hardstep_shader_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_render_hardstep_shader_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_render_hardstep_shader_test
+  COMMAND pd_render_hardstep_shader_test
 )
 
 add_test(

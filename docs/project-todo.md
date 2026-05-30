@@ -32,7 +32,7 @@ The first milestone is not a full editor. It is a clean, testable foundation: C1
 - [x] Add the minimal app lifecycle controller.
 - [x] Add Raylib window/camera wrapper under `engine`.
 - [x] Add render mesh buffer flattening from core mesh data.
-- [ ] Add a first hard-step shader pass for vertex color and face normal lighting.
+- [x] Add a first hard-step shader pass for vertex color and face normal lighting.
 - [ ] Display the cube fixture in an orthographic or near-isometric viewport.
 
 ## Phase 2: Visual Loop
