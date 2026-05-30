@@ -1,0 +1,17 @@
+﻿{
+    "schemaVersion":  1,
+    "initializedMarker":  "codex-project-git-workflow: initialized",
+    "initializedAt":  "2026-05-30 20:34:40 +08:00",
+    "projectName":  "PrismDraft",
+    "repoRoot":  "D:/LabProjects/PrismDraft",
+    "safeDirectory":  "D:/LabProjects/PrismDraft",
+    "statusCommand":  "git -c safe.directory=D:/LabProjects/PrismDraft status --short --branch",
+    "validationCommands":  [
+
+                           ],
+    "stagingPolicy":  "ask each time",
+    "commitCommand":  "",
+    "pushCommand":  "git -c safe.directory=D:/LabProjects/PrismDraft push -u origin HEAD",
+    "docsRequirement":  "",
+    "forbiddenCommands":  ""
+}
