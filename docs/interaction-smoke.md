@@ -20,6 +20,7 @@ It configures and builds the project, runs the focused interaction tests, captur
 - `visual-edge-low` / `visual-edge-high`: depth edge threshold changes must produce a localized visible screenshot difference.
 - `visual-normal-low` / `visual-normal-high`: normal edge threshold changes must produce a localized visible screenshot difference.
 - `visual-dark-low` / `visual-dark-high`: dark intensity changes must produce a broad screenshot difference.
+- `transform-move-right`: moving the object must produce a broad screenshot difference, including the designed shadow moving with the object footprint.
 - `modeling-bevel`: applying `3` through the viewport smoke case must render a screenshot that differs from the default viewport.
 - `modeling-loop-cut`: applying `4` through the viewport smoke case must render a screenshot that differs from the default viewport.
 - `tools\SmokeViewport.cmd`: the default shader path must compile and produce `captures/phase2_cube.png`.
@@ -41,6 +42,7 @@ Manual checks:
 - Resize the window while dragging the border; the viewport should continue repainting and should not leave persistent black exposed regions after resize settles.
 - In Model, select a face and click `Inset`, `Extrude`, `Bevel`, and `Loop cut`; each button should update the mesh and selected-face highlight.
 - In Move, drag position, rotate, and scale sliders; the object should update in the next frame, and `Reset` should restore the default transform.
+- When the object moves on X/Z, its hard projected shadow should follow the object while preserving the relative Shadow X/Z tuning.
 - In Visual, drag face RGB sliders, background RGB sliders, and outline sliders; selected-face color, background, and edge response should visibly change.
 - In Light, drag light direction, dark intensity, shadow strength, and shadow offset sliders; hard-step lighting and the projected shadow should visibly update.
 - Press `-` / `=` and confirm outline strength visibly fades or strengthens, not only the overlay value.

@@ -533,6 +533,27 @@ static PdRenderShadowConfig pd_app_viewport_controller_local_make_shadow_config(
     return shadow_config;
 }
 
+static PdRenderShadowConfig pd_app_viewport_controller_local_make_object_shadow_config(
+    PdRenderShadowConfig shadow_config,
+    const PdEditorTransformState* transform_state)
+{
+    float scale_x;
+    float scale_z;
+
+    if (transform_state == 0) {
+        return shadow_config;
+    }
+
+    scale_x = fabsf(transform_state->scale[0]);
+    scale_z = fabsf(transform_state->scale[2]);
+    shadow_config.offset_x += transform_state->position[0];
+    shadow_config.offset_z += transform_state->position[2];
+    shadow_config.half_width *= scale_x;
+    shadow_config.half_depth *= scale_z;
+    shadow_config.skew_x *= scale_x;
+    return shadow_config;
+}
+
 static const char* pd_app_viewport_controller_local_get_result_name(PdCoreResult result)
 {
     switch (result) {
@@ -769,6 +790,11 @@ static PdCoreResult pd_app_viewport_controller_local_apply_smoke_case(
 
     if (strcmp(smoke_case, "visual-dark-high") == 0) {
         app_context->visual_state.dark_intensity = 0.9f;
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (strcmp(smoke_case, "transform-move-right") == 0) {
+        app_context->transform_state.position[0] = 0.8f;
         return PD_CORE_RESULT_OK;
     }
 
@@ -1826,7 +1852,9 @@ int main(int argc, char** argv)
     light_direction_location = GetShaderLocation(hardstep_shader, "lightDirection");
     dark_intensity_location = GetShaderLocation(hardstep_shader, "darkIntensity");
     visual_config = pd_app_viewport_controller_local_make_visual_config(&app_context.visual_state);
-    shadow_config = pd_app_viewport_controller_local_make_shadow_config(&app_context.visual_state);
+    shadow_config = pd_app_viewport_controller_local_make_object_shadow_config(
+        pd_app_viewport_controller_local_make_shadow_config(&app_context.visual_state),
+        &app_context.transform_state);
     shader_config.light_direction = visual_config.light_direction;
     shader_config.dark_intensity = visual_config.dark_intensity;
     SetShaderValue(hardstep_shader, light_direction_location, &visual_config.light_direction, SHADER_UNIFORM_VEC3);
@@ -1931,7 +1959,9 @@ int main(int argc, char** argv)
         }
 
         visual_config = pd_app_viewport_controller_local_make_visual_config(&app_context.visual_state);
-        shadow_config = pd_app_viewport_controller_local_make_shadow_config(&app_context.visual_state);
+        shadow_config = pd_app_viewport_controller_local_make_object_shadow_config(
+            pd_app_viewport_controller_local_make_shadow_config(&app_context.visual_state),
+            &app_context.transform_state);
         SetShaderValue(hardstep_shader, light_direction_location, &visual_config.light_direction, SHADER_UNIFORM_VEC3);
         SetShaderValue(hardstep_shader, dark_intensity_location, &visual_config.dark_intensity, SHADER_UNIFORM_FLOAT);
         SetShaderValue(
