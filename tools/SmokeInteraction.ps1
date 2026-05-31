@@ -107,13 +107,18 @@ if ($LASTEXITCODE -ne 0) {
   exit $LASTEXITCODE
 }
 
+$defaultPath = Invoke-ViewportCase -CaseName "visual-default"
 $edgeLowPath = Invoke-ViewportCase -CaseName "visual-edge-low"
 $edgeHighPath = Invoke-ViewportCase -CaseName "visual-edge-high"
 $normalLowPath = Invoke-ViewportCase -CaseName "visual-normal-low"
 $normalHighPath = Invoke-ViewportCase -CaseName "visual-normal-high"
 $darkLowPath = Invoke-ViewportCase -CaseName "visual-dark-low"
 $darkHighPath = Invoke-ViewportCase -CaseName "visual-dark-high"
+$bevelPath = Invoke-ViewportCase -CaseName "modeling-bevel"
+$loopCutPath = Invoke-ViewportCase -CaseName "modeling-loop-cut"
 
 Assert-VisualDifference -Label "edge threshold" -LeftPath $edgeLowPath -RightPath $edgeHighPath -MinimumAverage 0.15 -MinimumChangedRatio 0.001 -MinimumMax 30.0
 Assert-VisualDifference -Label "normal threshold" -LeftPath $normalLowPath -RightPath $normalHighPath -MinimumAverage 0.15 -MinimumChangedRatio 0.001 -MinimumMax 30.0
 Assert-VisualDifference -Label "dark intensity" -LeftPath $darkLowPath -RightPath $darkHighPath -MinimumAverage 2.0 -MinimumChangedRatio 0.05 -MinimumMax 10.0
+Assert-VisualDifference -Label "bevel modeling" -LeftPath $defaultPath -RightPath $bevelPath -MinimumAverage 0.15 -MinimumChangedRatio 0.001 -MinimumMax 20.0
+Assert-VisualDifference -Label "loop cut modeling" -LeftPath $defaultPath -RightPath $loopCutPath -MinimumAverage 0.15 -MinimumChangedRatio 0.001 -MinimumMax 20.0

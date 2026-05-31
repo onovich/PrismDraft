@@ -565,6 +565,10 @@ static PdCoreResult pd_app_viewport_controller_local_apply_smoke_case(
         return PD_CORE_RESULT_OK;
     }
 
+    if (strcmp(smoke_case, "visual-default") == 0) {
+        return PD_CORE_RESULT_OK;
+    }
+
     if (strcmp(smoke_case, "visual-edge-low") == 0) {
         app_context->visual_state.edge_depth_threshold = 0.001f;
         app_context->visual_state.edge_normal_threshold = 1.0f;

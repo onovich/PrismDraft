@@ -19,6 +19,8 @@ It configures and builds the project, runs the focused interaction tests, captur
 - `visual-edge-low` / `visual-edge-high`: depth edge threshold changes must produce a localized visible screenshot difference.
 - `visual-normal-low` / `visual-normal-high`: normal edge threshold changes must produce a localized visible screenshot difference.
 - `visual-dark-low` / `visual-dark-high`: dark intensity changes must produce a broad screenshot difference.
+- `modeling-bevel`: applying `3` through the viewport smoke case must render a screenshot that differs from the default viewport.
+- `modeling-loop-cut`: applying `4` through the viewport smoke case must render a screenshot that differs from the default viewport.
 - `tools\SmokeViewport.cmd`: the default shader path must compile and produce `captures/phase2_cube.png`.
 
 The visual difference gates intentionally combine average difference, changed-pixel ratio, and max difference. Edge changes are local by nature, so a low full-image average is acceptable only when enough sampled edge pixels move by a large amount.
