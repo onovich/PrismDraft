@@ -5,4 +5,6 @@
 
 PdEngineCameraState pd_engine_camera_controller_make_default(void);
 
+void pd_engine_camera_controller_set_projection(PdEngineCameraState* camera_state, int projection);
+
 #endif

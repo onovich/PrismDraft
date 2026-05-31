@@ -17,7 +17,7 @@ PdCoreResult pd_editor_panel_state_set_active(PdEditorPanelState* panel_state, P
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
-    if (panel_kind < PD_EDITOR_PANEL_KIND_MODELING || panel_kind > PD_EDITOR_PANEL_KIND_LIGHTING) {
+    if (panel_kind < PD_EDITOR_PANEL_KIND_MODELING || panel_kind > PD_EDITOR_PANEL_KIND_VIEW) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -46,6 +46,8 @@ const char* pd_editor_panel_state_get_name(PdEditorPanelKind panel_kind)
             return "Visual";
         case PD_EDITOR_PANEL_KIND_LIGHTING:
             return "Light";
+        case PD_EDITOR_PANEL_KIND_VIEW:
+            return "View";
         default:
             return "Unknown";
     }

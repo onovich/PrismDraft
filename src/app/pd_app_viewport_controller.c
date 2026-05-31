@@ -31,7 +31,10 @@ static const float PD_APP_VIEWPORT_CONTROLLER_MIN_CAMERA_PITCH = -1.2f;
 static const float PD_APP_VIEWPORT_CONTROLLER_MAX_CAMERA_PITCH = 1.2f;
 static const float PD_APP_VIEWPORT_CONTROLLER_MIN_CAMERA_FOVY = 1.8f;
 static const float PD_APP_VIEWPORT_CONTROLLER_MAX_CAMERA_FOVY = 8.0f;
+static const float PD_APP_VIEWPORT_CONTROLLER_MIN_CAMERA_PERSPECTIVE_FOVY = 20.0f;
+static const float PD_APP_VIEWPORT_CONTROLLER_MAX_CAMERA_PERSPECTIVE_FOVY = 65.0f;
 static const float PD_APP_VIEWPORT_CONTROLLER_ZOOM_SPEED = 0.28f;
+static const float PD_APP_VIEWPORT_CONTROLLER_PERSPECTIVE_ZOOM_SPEED = 1.8f;
 static const float PD_APP_VIEWPORT_CONTROLLER_MOVE_STEP = 0.035f;
 static const float PD_APP_VIEWPORT_CONTROLLER_ROTATE_STEP_DEGREES = 1.5f;
 static const float PD_APP_VIEWPORT_CONTROLLER_SCALE_STEP = 0.015f;
@@ -195,6 +198,14 @@ static void pd_app_viewport_controller_local_pan_camera(PdEngineCameraState* cam
 static void pd_app_viewport_controller_local_zoom_camera(PdEngineCameraState* camera_state, float mouse_wheel_move)
 {
     if (camera_state == 0 || mouse_wheel_move == 0.0f) {
+        return;
+    }
+
+    if (camera_state->camera.projection == CAMERA_PERSPECTIVE) {
+        camera_state->camera.fovy = pd_app_viewport_controller_local_clamp(
+            camera_state->camera.fovy - (mouse_wheel_move * PD_APP_VIEWPORT_CONTROLLER_PERSPECTIVE_ZOOM_SPEED),
+            PD_APP_VIEWPORT_CONTROLLER_MIN_CAMERA_PERSPECTIVE_FOVY,
+            PD_APP_VIEWPORT_CONTROLLER_MAX_CAMERA_PERSPECTIVE_FOVY);
         return;
     }
 
@@ -798,6 +809,10 @@ static PdCoreResult pd_app_viewport_controller_local_apply_smoke_case(
         return PD_CORE_RESULT_OK;
     }
 
+    if (strcmp(smoke_case, "camera-perspective") == 0) {
+        return PD_CORE_RESULT_OK;
+    }
+
     if (strcmp(smoke_case, "modeling-bevel") == 0) {
         return pd_app_viewport_controller_local_apply_modeling_command(app_context, PD_EDITOR_TOOL_KIND_BEVEL);
     }
@@ -807,6 +822,25 @@ static PdCoreResult pd_app_viewport_controller_local_apply_smoke_case(
     }
 
     return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+}
+
+static PdCoreResult pd_app_viewport_controller_local_apply_camera_smoke_case(
+    PdEngineCameraState* camera_state,
+    const char* smoke_case)
+{
+    if (camera_state == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (smoke_case == 0 || smoke_case[0] == '\0') {
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (strcmp(smoke_case, "camera-perspective") == 0) {
+        pd_engine_camera_controller_set_projection(camera_state, CAMERA_PERSPECTIVE);
+    }
+
+    return PD_CORE_RESULT_OK;
 }
 
 static PdCoreResult pd_app_viewport_controller_local_update_visual_controls(
@@ -997,6 +1031,10 @@ static void pd_app_viewport_controller_local_update_panel_shortcuts(PdEditorPane
         (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_LIGHTING);
     }
 
+    if (IsKeyPressed(KEY_F5)) {
+        (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_VIEW);
+    }
+
     if (IsKeyPressed(KEY_TAB)) {
         pd_editor_panel_state_toggle(panel_state);
     }
@@ -1013,7 +1051,7 @@ static PdCoreResult pd_app_viewport_controller_local_rebuild_face_highlight(
 static void pd_app_viewport_controller_local_draw_panel_tabs(PdEditorPanelState* panel_state, Rectangle panel_rect)
 {
     Rectangle tab_rect;
-    float tab_width = (panel_rect.width - 24.0f) / 4.0f;
+    float tab_width = (panel_rect.width - 28.0f) / 5.0f;
 
     if (panel_state == 0) {
         return;
@@ -1049,6 +1087,14 @@ static void pd_app_viewport_controller_local_draw_panel_tabs(PdEditorPanelState*
             "Light",
             panel_state->active_panel == PD_EDITOR_PANEL_KIND_LIGHTING)) {
         (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_LIGHTING);
+    }
+
+    tab_rect.x += tab_width + 2.0f;
+    if (pd_app_viewport_controller_local_panel_button(
+            tab_rect,
+            "View",
+            panel_state->active_panel == PD_EDITOR_PANEL_KIND_VIEW)) {
+        (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_VIEW);
     }
 }
 
@@ -1376,8 +1422,55 @@ static void pd_app_viewport_controller_local_draw_lighting_panel(
     *panel_y = slider_rect.y + 30.0f;
 }
 
+static void pd_app_viewport_controller_local_draw_view_panel(
+    PdEngineCameraState* camera_state,
+    float panel_x,
+    float* panel_y)
+{
+    Rectangle button_rect;
+    const char* projection_name;
+    char projection_value_text[64];
+
+    if (camera_state == 0 || panel_y == 0) {
+        return;
+    }
+
+    projection_name = camera_state->camera.projection == CAMERA_PERSPECTIVE ? "Perspective" : "Orthographic";
+    if (camera_state->camera.projection == CAMERA_PERSPECTIVE) {
+        (void)snprintf(projection_value_text, sizeof(projection_value_text), "FOV %.1f", camera_state->camera.fovy);
+    } else {
+        (void)snprintf(projection_value_text, sizeof(projection_value_text), "Size %.2f", camera_state->camera.fovy);
+    }
+
+    pd_app_viewport_controller_local_draw_panel_text("Camera", panel_x, *panel_y, 12);
+    *panel_y += 24.0f;
+    pd_app_viewport_controller_local_draw_panel_text(projection_name, panel_x, *panel_y, 10);
+    *panel_y += 18.0f;
+    pd_app_viewport_controller_local_draw_panel_text(projection_value_text, panel_x, *panel_y, 10);
+    *panel_y += 28.0f;
+
+    button_rect = (Rectangle){ panel_x, *panel_y, 132.0f, 28.0f };
+    if (pd_app_viewport_controller_local_panel_button(
+            button_rect,
+            "Orthographic",
+            camera_state->camera.projection == CAMERA_ORTHOGRAPHIC)) {
+        pd_engine_camera_controller_set_projection(camera_state, CAMERA_ORTHOGRAPHIC);
+    }
+
+    button_rect.x += 142.0f;
+    if (pd_app_viewport_controller_local_panel_button(
+            button_rect,
+            "Perspective",
+            camera_state->camera.projection == CAMERA_PERSPECTIVE)) {
+        pd_engine_camera_controller_set_projection(camera_state, CAMERA_PERSPECTIVE);
+    }
+
+    *panel_y += 46.0f;
+}
+
 static PdCoreResult pd_app_viewport_controller_local_update_and_draw_panel(
     PdAppContextEntity* app_context,
+    PdEngineCameraState* camera_state,
     PdRenderMeshBuffer* render_mesh_buffer,
     Model* cube_model,
     PdRenderMeshBuffer* face_highlight_buffer,
@@ -1438,6 +1531,9 @@ static PdCoreResult pd_app_viewport_controller_local_update_and_draw_panel(
                 &panel_y);
         case PD_EDITOR_PANEL_KIND_LIGHTING:
             pd_app_viewport_controller_local_draw_lighting_panel(app_context, panel_x, &panel_y);
+            return PD_CORE_RESULT_OK;
+        case PD_EDITOR_PANEL_KIND_VIEW:
+            pd_app_viewport_controller_local_draw_view_panel(camera_state, panel_x, &panel_y);
             return PD_CORE_RESULT_OK;
         default:
             return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1821,6 +1917,11 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    if (pd_app_viewport_controller_local_apply_camera_smoke_case(&camera_state, smoke_case) != PD_CORE_RESULT_OK) {
+        pd_app_lifecycle_controller_shutdown(&app_context);
+        return 1;
+    }
+
     if (smoke_case != 0 && smoke_case[0] != '\0') {
         (void)snprintf(capture_path, sizeof(capture_path), "captures/%s.png", smoke_case);
     }
@@ -2026,6 +2127,7 @@ int main(int argc, char** argv)
             pd_app_viewport_controller_local_draw_overlay(&app_context, visual_config, shadow_config);
             if (pd_app_viewport_controller_local_update_and_draw_panel(
                     &app_context,
+                    &camera_state,
                     &render_mesh_buffer,
                     &cube_model,
                     &face_highlight_buffer,

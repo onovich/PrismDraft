@@ -34,6 +34,7 @@ These items track the issues and expected controls from manual smoke. Do not rem
 - [x] Add an app-layer operation panel with grouped Model, Move, Visual, and Light controls.
 - [x] Make `F1`-`F4` switch grouped operation panels and `Tab` hide/show the panel.
 - [x] Ensure mouse clicks inside the operation panel do not also trigger viewport face picking.
+- [x] Add a View panel control to switch the camera between orthographic and perspective projection.
 
 ## Phase 0: Preparation
 
@@ -140,10 +141,11 @@ These items track the issues and expected controls from manual smoke. Do not rem
 
 - [x] Add `PdEditorPanelState` as the editor-owned state for active panel and panel visibility.
 - [x] Store panel state in `PdAppContextEntity` so the UI remains reachable from root app state.
-- [x] Add grouped Model, Move, Visual, and Light operation panels in the Raylib app viewport.
+- [x] Add grouped Model, Move, Visual, Light, and View operation panels in the Raylib app viewport.
 - [x] Route Model panel buttons through the existing editor modeling service and rebuild render buffers after edits.
 - [x] Add direct sliders for transform, face color, background color, outline tuning, lighting, and shadow tuning.
 - [x] Keep keyboard shortcuts as fallback smoke inputs while making `F1`-`F4` and `Tab` panel navigation shortcuts.
+- [x] Add `F5` as the View panel shortcut and keep projection switching in the operation panel.
 - [x] Document operation panel manual smoke expectations.
 
 ## Always-On Checks

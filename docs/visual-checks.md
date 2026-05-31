@@ -113,15 +113,17 @@ Controls:
 - `F2`: open the Move panel.
 - `F3`: open the Visual panel.
 - `F4`: open the Light panel.
+- `F5`: open the View panel.
 - `Tab`: hide or show the current operation panel.
 - Model panel buttons: apply inset, extrude, bevel, or loop cut to the selected face.
 - Move panel sliders: adjust object position, Y rotation, and uniform scale; `Reset` restores transform defaults.
 - Moving the object on X/Z should move the hard projected shadow with the object; Light panel Shadow X/Z remains a relative composition offset.
 - Visual panel sliders: adjust selected-face RGB, background RGB, outline radius, depth threshold, and normal threshold.
 - Light panel sliders: adjust light direction, dark-side intensity, shadow strength, and shadow offset.
+- View panel buttons: switch camera projection between orthographic and perspective.
 - Right mouse drag: orbit camera around the model.
 - Middle mouse drag: pan camera target and position.
-- Mouse wheel: zoom the orthographic camera.
+- Mouse wheel: zoom the active camera projection.
 - Left click: pick a cube face and rebuild selected-face highlight.
 - `W` / `S`: move the object along smoke Z.
 - `A` / `D`: move the object along smoke X.
@@ -152,6 +154,7 @@ Current comparison:
 - Pass: Face color, background color, outline thickness, edge thresholds, light direction, dark intensity, shadow strength, and shadow offset are editable through keyboard controls.
 - Pass: Interactive mode draws a compact state overlay for selection, transform, color, outline, lighting, and shadow values without changing the automated screenshot baseline.
 - Pass: Object transform movement is applied to the shadow footprint, so the designed shadow stays under the moved object.
+- Pass: The View panel can switch the Raylib camera between orthographic and perspective projection.
 - Pass: Interactive modeling shortcuts call the existing core inset, extrude, bevel, and loop cut controllers, then rebuild the viewport mesh and selected-face highlight.
 - Watch: Keyboard controls remain as fallback smoke inputs; day-to-day editing should use the operation panel, with shortcuts mainly opening or switching panels.
 - Watch: The user still needs to manually re-check edge placement and anti-aliasing in the interactive viewport after the Phase 5 render pass.

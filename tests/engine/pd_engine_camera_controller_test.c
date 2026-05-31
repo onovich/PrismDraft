@@ -16,5 +16,13 @@ int main(void)
     assert(camera_state.camera.fovy == 4.5f);
     assert(camera_state.orbit_distance == 6.0f);
 
+    pd_engine_camera_controller_set_projection(&camera_state, CAMERA_PERSPECTIVE);
+    assert(camera_state.camera.projection == CAMERA_PERSPECTIVE);
+    assert(camera_state.camera.fovy == 35.0f);
+
+    pd_engine_camera_controller_set_projection(&camera_state, CAMERA_ORTHOGRAPHIC);
+    assert(camera_state.camera.projection == CAMERA_ORTHOGRAPHIC);
+    assert(camera_state.camera.fovy == 4.5f);
+
     return 0;
 }
