@@ -38,6 +38,7 @@ Manual checks:
 
 - Use the operation panel as the primary control surface. `F1` opens Model, `F2` opens Move, `F3` opens Visual, `F4` opens Light, and `Tab` hides or shows the panel.
 - Click panel tabs and controls; clicks inside the panel should not pick or clear model faces behind the panel.
+- Resize the window while dragging the border; the viewport should continue repainting and should not leave persistent black exposed regions after resize settles.
 - In Model, select a face and click `Inset`, `Extrude`, `Bevel`, and `Loop cut`; each button should update the mesh and selected-face highlight.
 - In Move, drag position, rotate, and scale sliders; the object should update in the next frame, and `Reset` should restore the default transform.
 - In Visual, drag face RGB sliders, background RGB sliders, and outline sliders; selected-face color, background, and edge response should visibly change.

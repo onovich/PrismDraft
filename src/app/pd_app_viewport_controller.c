@@ -44,6 +44,8 @@ static const float PD_APP_VIEWPORT_CONTROLLER_SHADOW_OFFSET_STEP = 0.05f;
 static const int PD_APP_VIEWPORT_CONTROLLER_SHADOW_ALPHA_STEP = 12;
 static const int PD_APP_VIEWPORT_CONTROLLER_PANEL_WIDTH = 308;
 static const int PD_APP_VIEWPORT_CONTROLLER_PANEL_MARGIN = 12;
+static const unsigned int PD_APP_VIEWPORT_CONTROLLER_INTERACTIVE_WINDOW_FLAGS =
+    FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_ALWAYS_RUN;
 
 static int pd_app_viewport_controller_local_has_argument(int argc, char** argv, const char* expected_argument)
 {
@@ -1802,7 +1804,8 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    SetConfigFlags((is_interactive ? FLAG_WINDOW_RESIZABLE : FLAG_WINDOW_HIDDEN) | FLAG_MSAA_4X_HINT);
+    SetConfigFlags((is_interactive ? PD_APP_VIEWPORT_CONTROLLER_INTERACTIVE_WINDOW_FLAGS : FLAG_WINDOW_HIDDEN) |
+                   FLAG_MSAA_4X_HINT);
     InitWindow(window_config.width, window_config.height, window_config.title);
     SetTargetFPS(60);
 

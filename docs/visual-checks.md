@@ -57,6 +57,7 @@ Observed through `tools\SmokeViewportInteractive.cmd`.
 Pass:
 
 - Window opens correctly.
+- Window resizing is supported; during drag-resize, the viewport should keep repainting and should not leave persistent black exposed regions after the next frame.
 - Basic cube composition, flat poster background, hard-step face lighting, and hard projected shadow are directionally correct.
 - No black screen, flicker, or obvious broken faces were observed.
 
