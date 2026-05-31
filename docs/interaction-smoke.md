@@ -21,6 +21,7 @@ It configures and builds the project, runs the focused interaction tests, captur
 - `visual-normal-low` / `visual-normal-high`: normal edge threshold changes must produce a localized visible screenshot difference.
 - `visual-dark-low` / `visual-dark-high`: dark intensity changes must produce a broad screenshot difference.
 - `transform-move-right`: moving the object must produce a broad screenshot difference, including the designed shadow moving with the object footprint.
+- `shadow-sink-above-ground` / `shadow-sink-below-ground`: sinking the cube through the ground plane must keep the projected shadow clipped by the ground plane instead of abruptly discarding crossing triangles.
 - `camera-perspective`: perspective projection must render a screenshot that differs from the default orthographic viewport.
 - `ground-hidden`: hiding the ground must produce a visible screenshot difference.
 - `ground-color-blue`: changing the ground color must produce a visible screenshot difference.

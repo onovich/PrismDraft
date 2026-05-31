@@ -158,6 +158,7 @@ Current comparison:
 - Pass: Interactive mode draws a compact state overlay for selection, transform, color, outline, lighting, and shadow values without changing the automated screenshot baseline.
 - Pass: Object transform movement is applied to the shadow footprint, so the designed shadow stays under the moved object.
 - Pass: The default shadow is now projected from the flattened mesh triangles along the light direction onto the ground plane, replacing the fixed fake shadow quad.
+- Pass: Projected shadow triangles are clipped against the ground plane before projection, so an object crossing below ground no longer causes entire crossing triangles to disappear at once.
 - Pass: The viewport draws a semi-transparent ground plane with dashed grid lines and panel controls for visibility, Y position, and RGBA.
 - Pass: Scene state now supports multiple independent cube objects; rendering, picking, transform, face color, modeling, export, timeline, and smoke paths use the active object.
 - Pass: The View panel can switch the Raylib camera between orthographic and perspective projection.

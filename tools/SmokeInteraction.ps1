@@ -115,6 +115,8 @@ $normalHighPath = Invoke-ViewportCase -CaseName "visual-normal-high"
 $darkLowPath = Invoke-ViewportCase -CaseName "visual-dark-low"
 $darkHighPath = Invoke-ViewportCase -CaseName "visual-dark-high"
 $transformMoveRightPath = Invoke-ViewportCase -CaseName "transform-move-right"
+$shadowSinkAboveGroundPath = Invoke-ViewportCase -CaseName "shadow-sink-above-ground"
+$shadowSinkBelowGroundPath = Invoke-ViewportCase -CaseName "shadow-sink-below-ground"
 $cameraPerspectivePath = Invoke-ViewportCase -CaseName "camera-perspective"
 $groundHiddenPath = Invoke-ViewportCase -CaseName "ground-hidden"
 $groundColorBluePath = Invoke-ViewportCase -CaseName "ground-color-blue"
@@ -128,6 +130,7 @@ Assert-VisualDifference -Label "edge threshold" -LeftPath $edgeLowPath -RightPat
 Assert-VisualDifference -Label "normal threshold" -LeftPath $normalLowPath -RightPath $normalHighPath -MinimumAverage 0.15 -MinimumChangedRatio 0.001 -MinimumMax 30.0
 Assert-VisualDifference -Label "dark intensity" -LeftPath $darkLowPath -RightPath $darkHighPath -MinimumAverage 2.0 -MinimumChangedRatio 0.05 -MinimumMax 10.0
 Assert-VisualDifference -Label "transform move" -LeftPath $defaultPath -RightPath $transformMoveRightPath -MinimumAverage 2.0 -MinimumChangedRatio 0.03 -MinimumMax 20.0
+Assert-VisualDifference -Label "shadow sink through ground" -LeftPath $shadowSinkAboveGroundPath -RightPath $shadowSinkBelowGroundPath -MinimumAverage 0.2 -MinimumChangedRatio 0.005 -MinimumMax 10.0
 Assert-VisualDifference -Label "camera perspective" -LeftPath $defaultPath -RightPath $cameraPerspectivePath -MinimumAverage 1.0 -MinimumChangedRatio 0.02 -MinimumMax 20.0
 Assert-VisualDifference -Label "ground hidden" -LeftPath $defaultPath -RightPath $groundHiddenPath -MinimumAverage 1.0 -MinimumChangedRatio 0.02 -MinimumMax 20.0
 Assert-VisualDifference -Label "ground color" -LeftPath $defaultPath -RightPath $groundColorBluePath -MinimumAverage 1.0 -MinimumChangedRatio 0.02 -MinimumMax 20.0

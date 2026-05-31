@@ -36,6 +36,7 @@ These items track the issues and expected controls from manual smoke. Do not rem
 - [x] Ensure mouse clicks inside the operation panel do not also trigger viewport face picking.
 - [x] Add a View panel control to switch the camera between orthographic and perspective projection.
 - [x] Replace the fixed fake shadow quad with a mesh-projected ground shadow driven by the current light direction.
+- [x] Clip projected shadow triangles against the ground plane so shadows change continuously while an object sinks below ground.
 - [x] Add a semi-transparent ground plane with dashed infinite-canvas-style grid lines.
 - [x] Add Ground panel controls for showing/hiding the ground, moving it on Y, and changing its color/alpha.
 - [x] Add scene object storage so multiple independent cube meshes can exist at once.

@@ -49,6 +49,7 @@ static const int PD_APP_VIEWPORT_CONTROLLER_SHADOW_ALPHA_STEP = 12;
 static const int PD_APP_VIEWPORT_CONTROLLER_PANEL_WIDTH = 308;
 static const int PD_APP_VIEWPORT_CONTROLLER_PANEL_MARGIN = 12;
 static const float PD_APP_VIEWPORT_CONTROLLER_GROUND_EPSILON = 0.006f;
+#define PD_APP_VIEWPORT_CONTROLLER_SHADOW_CLIPPED_VERTEX_CAPACITY 4u
 static const unsigned int PD_APP_VIEWPORT_CONTROLLER_INTERACTIVE_WINDOW_FLAGS =
     FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_ALWAYS_RUN;
 
@@ -889,6 +890,18 @@ static PdCoreResult pd_app_viewport_controller_local_apply_smoke_case(
         }
 
         active_object->transform_state.position[0] = 0.8f;
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (strcmp(smoke_case, "shadow-sink-above-ground") == 0 ||
+        strcmp(smoke_case, "shadow-sink-below-ground") == 0) {
+        PdEditorSceneObjectEntity* active_object = pd_app_viewport_controller_local_get_active_object(app_context);
+        if (active_object == 0) {
+            return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+        }
+
+        active_object->transform_state.position[1] =
+            strcmp(smoke_case, "shadow-sink-above-ground") == 0 ? 0.04f : -0.08f;
         return PD_CORE_RESULT_OK;
     }
 
@@ -1929,6 +1942,113 @@ static int pd_app_viewport_controller_local_project_to_ground(
     return 1;
 }
 
+static int pd_app_viewport_controller_local_is_above_shadow_plane(Vector3 source, float plane_y)
+{
+    return source.y >= plane_y;
+}
+
+static Vector3 pd_app_viewport_controller_local_intersect_shadow_plane(
+    Vector3 start,
+    Vector3 end,
+    float plane_y)
+{
+    float denominator = end.y - start.y;
+    float ratio = 0.0f;
+
+    if (fabsf(denominator) > 0.000001f) {
+        ratio = (plane_y - start.y) / denominator;
+    }
+
+    ratio = pd_app_viewport_controller_local_clamp(ratio, 0.0f, 1.0f);
+    return (Vector3){
+        start.x + ((end.x - start.x) * ratio),
+        plane_y,
+        start.z + ((end.z - start.z) * ratio)
+    };
+}
+
+static uint32_t pd_app_viewport_controller_local_clip_shadow_polygon(
+    const Vector3 source_vertices[3],
+    float plane_y,
+    Vector3 clipped_vertices[PD_APP_VIEWPORT_CONTROLLER_SHADOW_CLIPPED_VERTEX_CAPACITY])
+{
+    Vector3 working_vertices[PD_APP_VIEWPORT_CONTROLLER_SHADOW_CLIPPED_VERTEX_CAPACITY + 1u];
+    Vector3 next_vertices[PD_APP_VIEWPORT_CONTROLLER_SHADOW_CLIPPED_VERTEX_CAPACITY + 1u];
+    uint32_t working_count = 3u;
+    uint32_t next_count = 0u;
+    uint32_t vertex_index;
+
+    if (source_vertices == 0 || clipped_vertices == 0) {
+        return 0u;
+    }
+
+    working_vertices[0] = source_vertices[0];
+    working_vertices[1] = source_vertices[1];
+    working_vertices[2] = source_vertices[2];
+
+    for (vertex_index = 0u; vertex_index < working_count; vertex_index++) {
+        Vector3 current = working_vertices[vertex_index];
+        Vector3 previous = working_vertices[(vertex_index + working_count - 1u) % working_count];
+        int is_current_above = pd_app_viewport_controller_local_is_above_shadow_plane(current, plane_y);
+        int is_previous_above = pd_app_viewport_controller_local_is_above_shadow_plane(previous, plane_y);
+
+        if (is_current_above) {
+            if (!is_previous_above && next_count < PD_APP_VIEWPORT_CONTROLLER_SHADOW_CLIPPED_VERTEX_CAPACITY) {
+                next_vertices[next_count] =
+                    pd_app_viewport_controller_local_intersect_shadow_plane(previous, current, plane_y);
+                next_count++;
+            }
+
+            if (next_count < PD_APP_VIEWPORT_CONTROLLER_SHADOW_CLIPPED_VERTEX_CAPACITY) {
+                next_vertices[next_count] = current;
+                next_count++;
+            }
+        } else if (is_previous_above && next_count < PD_APP_VIEWPORT_CONTROLLER_SHADOW_CLIPPED_VERTEX_CAPACITY) {
+            next_vertices[next_count] = pd_app_viewport_controller_local_intersect_shadow_plane(previous, current, plane_y);
+            next_count++;
+        }
+    }
+
+    for (vertex_index = 0u; vertex_index < next_count; vertex_index++) {
+        clipped_vertices[vertex_index] = next_vertices[vertex_index];
+    }
+
+    return next_count;
+}
+
+static void pd_app_viewport_controller_local_draw_clipped_shadow_polygon(
+    PdRenderShadowConfig shadow_config,
+    const Vector3 clipped_vertices[PD_APP_VIEWPORT_CONTROLLER_SHADOW_CLIPPED_VERTEX_CAPACITY],
+    uint32_t clipped_vertex_count,
+    Vector3 light_direction)
+{
+    Vector3 projected_vertices[PD_APP_VIEWPORT_CONTROLLER_SHADOW_CLIPPED_VERTEX_CAPACITY];
+    uint32_t vertex_index;
+
+    if (clipped_vertices == 0 || clipped_vertex_count < 3u ||
+        clipped_vertex_count > PD_APP_VIEWPORT_CONTROLLER_SHADOW_CLIPPED_VERTEX_CAPACITY) {
+        return;
+    }
+
+    for (vertex_index = 0u; vertex_index < clipped_vertex_count; vertex_index++) {
+        if (!pd_app_viewport_controller_local_project_to_ground(
+                clipped_vertices[vertex_index],
+                shadow_config,
+                light_direction,
+                &projected_vertices[vertex_index])) {
+            return;
+        }
+    }
+
+    for (vertex_index = 1u; vertex_index + 1u < clipped_vertex_count; vertex_index++) {
+        DrawTriangle3D(
+            projected_vertices[0],
+            projected_vertices[vertex_index],
+            projected_vertices[vertex_index + 1u],
+            shadow_config.color);
+    }
+}
+
 static void pd_app_viewport_controller_local_draw_projected_shadow(
     PdRenderShadowConfig shadow_config,
     const PdRenderMeshBuffer* render_mesh_buffer,
@@ -1955,15 +2075,22 @@ static void pd_app_viewport_controller_local_draw_projected_shadow(
         Vector3 source_c = pd_app_viewport_controller_local_transform_render_vertex(
             &render_mesh_buffer->vertices[vertex_index + 2u],
             object_transform);
-        Vector3 shadow_a;
-        Vector3 shadow_b;
-        Vector3 shadow_c;
+        Vector3 source_vertices[3];
+        Vector3 clipped_vertices[PD_APP_VIEWPORT_CONTROLLER_SHADOW_CLIPPED_VERTEX_CAPACITY];
+        uint32_t clipped_vertex_count;
 
-        if (pd_app_viewport_controller_local_project_to_ground(source_a, shadow_config, light_direction, &shadow_a) &&
-            pd_app_viewport_controller_local_project_to_ground(source_b, shadow_config, light_direction, &shadow_b) &&
-            pd_app_viewport_controller_local_project_to_ground(source_c, shadow_config, light_direction, &shadow_c)) {
-            DrawTriangle3D(shadow_a, shadow_b, shadow_c, shadow_config.color);
-        }
+        source_vertices[0] = source_a;
+        source_vertices[1] = source_b;
+        source_vertices[2] = source_c;
+        clipped_vertex_count = pd_app_viewport_controller_local_clip_shadow_polygon(
+            source_vertices,
+            shadow_config.plane_y,
+            clipped_vertices);
+        pd_app_viewport_controller_local_draw_clipped_shadow_polygon(
+            shadow_config,
+            clipped_vertices,
+            clipped_vertex_count,
+            light_direction);
     }
     EndBlendMode();
 }
