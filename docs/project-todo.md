@@ -25,6 +25,10 @@ These items track the issues and expected controls from manual smoke. Do not rem
 - [x] Add lighting controls for light direction, dark intensity, shadow strength, and shadow offset.
 - [x] Add a compact overlay that exposes current selection, transform, color, outline, and lighting values.
 - [x] Wire modeling commands into interactive smoke: inset, extrude, bevel, and loop cut.
+- [x] Rework visual tuning shortcuts so `-` / `=`, `;` / `'`, and `U` / `I` create visible feedback, not only overlay value changes.
+- [x] Rework loop cut so `4` splits a selected quad into two quads with a midpoint cut instead of triangulating the face.
+- [x] Rework bevel so `3` creates an inward chamfer around the selected face instead of an outward extrusion.
+- [x] Add `tools\SmokeInteraction.cmd` to cover the user-facing interaction regressions when manual smoke is unavailable.
 - [x] Add app-level glTF and GLB export smoke from the edited mesh.
 - [x] Add a minimal app-level timeline demo that applies PRS animation to an object.
 

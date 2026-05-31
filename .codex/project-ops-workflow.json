@@ -78,6 +78,7 @@
                                               ],
                                      "commands":  [
                                                      "tools\\SmokeViewport.cmd",
+                                                     "tools\\SmokeInteraction.cmd",
                                                      "tools\\SmokeExport.cmd",
                                                      "tools\\SmokeTimeline.cmd"
                                                   ]

@@ -60,7 +60,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\ConfigureBuild.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\Build.ps1
 ```
 
-The build currently configures the minimal C11/CTest scaffold and has no Raylib dependency.
+The build currently configures the C11/CTest scaffold and the Raylib-backed viewport executable.
 
 ## Test
 
@@ -86,7 +86,12 @@ This guards PrismDraft's required `pd_<layer>_<business>_<role>` source naming, 
 
 ```powershell
 tools\SmokeViewport.cmd
+tools\SmokeInteraction.cmd
+tools\SmokeExport.cmd
+tools\SmokeTimeline.cmd
 ```
+
+`tools\SmokeInteraction.cmd` is the user-facing interaction regression smoke. It runs the focused tests for visual state stepping, bevel, loop cut, and modeled-mesh pickability, then captures the viewport screenshot path.
 
 For manual visual inspection, run:
 
@@ -100,7 +105,7 @@ For automated process lifecycle verification, run:
 tools\SmokeViewportLifecycle.cmd
 ```
 
-The automated command builds the viewport executable, renders the hidden Raylib viewport, writes `captures/phase2_cube.png`, and exits. The interactive command opens a visible Raylib window and exits when the window is closed. The lifecycle command opens the interactive viewport, sends a normal window close message, and verifies the process exits with code `0`.
+The automated viewport command builds the viewport executable, renders the hidden Raylib viewport, writes `captures/phase2_cube.png`, and exits. The interactive command opens a visible Raylib window and exits when the window is closed. The lifecycle command opens the interactive viewport, sends a normal window close message, and verifies the process exits.
 
 ## Dev Server
 
