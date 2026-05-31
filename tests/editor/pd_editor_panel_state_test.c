@@ -21,6 +21,8 @@ static void pd_editor_panel_state_test_local_sets_active_panel(void)
     assert(panel_state.is_open);
     assert(pd_editor_panel_state_set_active(&panel_state, PD_EDITOR_PANEL_KIND_VIEW) == PD_CORE_RESULT_OK);
     assert(panel_state.active_panel == PD_EDITOR_PANEL_KIND_VIEW);
+    assert(pd_editor_panel_state_set_active(&panel_state, PD_EDITOR_PANEL_KIND_GROUND) == PD_CORE_RESULT_OK);
+    assert(panel_state.active_panel == PD_EDITOR_PANEL_KIND_GROUND);
 }
 
 static void pd_editor_panel_state_test_local_toggles_panel(void)
@@ -53,6 +55,7 @@ static void pd_editor_panel_state_test_local_names_panels(void)
     assert(pd_editor_panel_state_get_name(PD_EDITOR_PANEL_KIND_VISUAL) != 0);
     assert(pd_editor_panel_state_get_name(PD_EDITOR_PANEL_KIND_LIGHTING) != 0);
     assert(pd_editor_panel_state_get_name(PD_EDITOR_PANEL_KIND_VIEW) != 0);
+    assert(pd_editor_panel_state_get_name(PD_EDITOR_PANEL_KIND_GROUND) != 0);
     assert(pd_editor_panel_state_get_name((PdEditorPanelKind)99) != 0);
 }
 

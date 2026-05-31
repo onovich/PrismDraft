@@ -4,9 +4,9 @@ This TODO translates the design mirror and visual references into small Codex-si
 
 ## Current Focus
 
-Phase 7: Operation panel and grouped direct controls.
+Phase 8: Scene ground, projected shadows, and multi-object editing.
 
-The current milestone is moving routine editing from shortcut-first smoke inputs to a direct operation panel with grouped controls. Keyboard shortcuts should remain useful for quick panel switching and smoke fallback, not as the primary way to tune modeling, transform, visual, and lighting parameters.
+The current milestone is moving PrismDraft from a single-cube viewport with a designed shadow graphic toward a scene-level editor: an explicit ground plane, geometry-projected shadows, and multiple independently editable cube objects.
 
 ## Open User-Facing TODO
 
@@ -35,6 +35,14 @@ These items track the issues and expected controls from manual smoke. Do not rem
 - [x] Make `F1`-`F4` switch grouped operation panels and `Tab` hide/show the panel.
 - [x] Ensure mouse clicks inside the operation panel do not also trigger viewport face picking.
 - [x] Add a View panel control to switch the camera between orthographic and perspective projection.
+- [x] Replace the fixed fake shadow quad with a mesh-projected ground shadow driven by the current light direction.
+- [x] Add a semi-transparent ground plane with dashed infinite-canvas-style grid lines.
+- [x] Add Ground panel controls for showing/hiding the ground, moving it on Y, and changing its color/alpha.
+- [ ] Add scene object storage so multiple independent cube meshes can exist at once.
+- [ ] Add a Model panel action to create a new cube in the scene.
+- [ ] Change picking and selection from single-mesh face selection to object+face selection.
+- [ ] Route transform, face color, modeling commands, export, timeline, and smoke paths through the selected object.
+- [ ] Revisit ground/shadow draw ordering after multi-object support so ground hides below-plane geometry across all objects.
 
 ## Phase 0: Preparation
 
@@ -147,6 +155,21 @@ These items track the issues and expected controls from manual smoke. Do not rem
 - [x] Keep keyboard shortcuts as fallback smoke inputs while making `F1`-`F4` and `Tab` panel navigation shortcuts.
 - [x] Add `F5` as the View panel shortcut and keep projection switching in the operation panel.
 - [x] Document operation panel manual smoke expectations.
+
+## Phase 8: Scene Ground, Projected Shadows, And Multi-Object Editing
+
+- [x] Add `PdRenderGroundConfig` as the render-layer config for ground visibility, color, height, size, and grid spacing.
+- [x] Store ground visibility, color, height, and grid spacing in editor visual state.
+- [x] Add a Ground operation panel and `F6` shortcut.
+- [x] Draw a semi-transparent ground plane with dashed grid lines in the viewport.
+- [x] Project the actual flattened mesh triangles along the light direction onto the ground plane for object-shaped shadows.
+- [x] Add interaction smoke cases for ground hide, ground color, and ground movement.
+- [ ] Define scene object entity/state with contiguous object slots, each owning mesh and PRS transform.
+- [ ] Migrate the existing active cube into scene object slot 0 without breaking current tests.
+- [ ] Add object selection identity alongside face selection.
+- [ ] Render and pick all scene objects.
+- [ ] Add a Create Cube action to the operation panel.
+- [ ] Apply modeling, transform, visual face color, export, and animation operations to the selected object.
 
 ## Always-On Checks
 

@@ -22,6 +22,9 @@ It configures and builds the project, runs the focused interaction tests, captur
 - `visual-dark-low` / `visual-dark-high`: dark intensity changes must produce a broad screenshot difference.
 - `transform-move-right`: moving the object must produce a broad screenshot difference, including the designed shadow moving with the object footprint.
 - `camera-perspective`: perspective projection must render a screenshot that differs from the default orthographic viewport.
+- `ground-hidden`: hiding the ground must produce a visible screenshot difference.
+- `ground-color-blue`: changing the ground color must produce a visible screenshot difference.
+- `ground-move-up`: moving the ground plane must produce a visible screenshot difference.
 - `modeling-bevel`: applying `3` through the viewport smoke case must render a screenshot that differs from the default viewport.
 - `modeling-loop-cut`: applying `4` through the viewport smoke case must render a screenshot that differs from the default viewport.
 - `tools\SmokeViewport.cmd`: the default shader path must compile and produce `captures/phase2_cube.png`.
@@ -38,15 +41,16 @@ tools\SmokeViewportInteractive.cmd
 
 Manual checks:
 
-- Use the operation panel as the primary control surface. `F1` opens Model, `F2` opens Move, `F3` opens Visual, `F4` opens Light, `F5` opens View, and `Tab` hides or shows the panel.
+- Use the operation panel as the primary control surface. `F1` opens Model, `F2` opens Move, `F3` opens Visual, `F4` opens Light, `F5` opens View, `F6` opens Ground, and `Tab` hides or shows the panel.
 - Click panel tabs and controls; clicks inside the panel should not pick or clear model faces behind the panel.
 - Resize the window while dragging the border; the viewport should continue repainting and should not leave persistent black exposed regions after resize settles.
 - In Model, select a face and click `Inset`, `Extrude`, `Bevel`, and `Loop cut`; each button should update the mesh and selected-face highlight.
 - In Move, drag position, rotate, and scale sliders; the object should update in the next frame, and `Reset` should restore the default transform.
-- When the object moves on X/Z, its hard projected shadow should follow the object while preserving the relative Shadow X/Z tuning.
+- When the object moves on X/Z, its projected shadow should be derived from the object silhouette and continue to follow the object.
 - In Visual, drag face RGB sliders, background RGB sliders, and outline sliders; selected-face color, background, and edge response should visibly change.
-- In Light, drag light direction, dark intensity, shadow strength, and shadow offset sliders; hard-step lighting and the projected shadow should visibly update.
+- In Light, drag light direction, dark intensity, and shadow strength sliders; hard-step lighting and the projected ground shadow should visibly update.
 - In View, switch between `Orthographic` and `Perspective`; the cube should visibly change projection while preserving orbit, pan, lighting, and panel behavior.
+- In Ground, switch visibility, move Ground Y, and adjust ground RGBA; the semi-transparent plane and dashed grid should update without breaking the object projection.
 - Press `-` / `=` and confirm outline strength visibly fades or strengthens, not only the overlay value.
 - Press `;` / `'` and confirm crease/normal edge sensitivity visibly changes.
 - Press `U` / `I` and confirm shaded faces visibly lighten or darken.

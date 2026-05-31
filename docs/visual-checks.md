@@ -114,13 +114,15 @@ Controls:
 - `F3`: open the Visual panel.
 - `F4`: open the Light panel.
 - `F5`: open the View panel.
+- `F6`: open the Ground panel.
 - `Tab`: hide or show the current operation panel.
 - Model panel buttons: apply inset, extrude, bevel, or loop cut to the selected face.
 - Move panel sliders: adjust object position, Y rotation, and uniform scale; `Reset` restores transform defaults.
-- Moving the object on X/Z should move the hard projected shadow with the object; Light panel Shadow X/Z remains a relative composition offset.
+- Moving the object on X/Z should move the projected shadow with the object silhouette.
 - Visual panel sliders: adjust selected-face RGB, background RGB, outline radius, depth threshold, and normal threshold.
-- Light panel sliders: adjust light direction, dark-side intensity, shadow strength, and shadow offset.
+- Light panel sliders: adjust light direction, dark-side intensity, and shadow strength.
 - View panel buttons: switch camera projection between orthographic and perspective.
+- Ground panel buttons/sliders: show or hide the ground, move Ground Y, and edit ground RGBA.
 - Right mouse drag: orbit camera around the model.
 - Middle mouse drag: pan camera target and position.
 - Mouse wheel: zoom the active camera projection.
@@ -154,6 +156,8 @@ Current comparison:
 - Pass: Face color, background color, outline thickness, edge thresholds, light direction, dark intensity, shadow strength, and shadow offset are editable through keyboard controls.
 - Pass: Interactive mode draws a compact state overlay for selection, transform, color, outline, lighting, and shadow values without changing the automated screenshot baseline.
 - Pass: Object transform movement is applied to the shadow footprint, so the designed shadow stays under the moved object.
+- Pass: The default shadow is now projected from the flattened mesh triangles along the light direction onto the ground plane, replacing the fixed fake shadow quad.
+- Pass: The viewport draws a semi-transparent ground plane with dashed grid lines and panel controls for visibility, Y position, and RGBA.
 - Pass: The View panel can switch the Raylib camera between orthographic and perspective projection.
 - Pass: Interactive modeling shortcuts call the existing core inset, extrude, bevel, and loop cut controllers, then rebuild the viewport mesh and selected-face highlight.
 - Watch: Keyboard controls remain as fallback smoke inputs; day-to-day editing should use the operation panel, with shortcuts mainly opening or switching panels.

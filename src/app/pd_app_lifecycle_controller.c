@@ -47,6 +47,7 @@ PdCoreResult pd_app_lifecycle_controller_init(PdAppContextEntity* app_context)
         pd_app_lifecycle_controller_shutdown(app_context);
         return result;
     }
+    app_context->visual_state.shadow_plane_y = app_context->visual_state.ground_y;
 
     result = pd_core_cube_fixture_build(&app_context->active_mesh);
     if (result != PD_CORE_RESULT_OK) {

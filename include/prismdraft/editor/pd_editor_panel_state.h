@@ -8,7 +8,8 @@ typedef enum PdEditorPanelKind {
     PD_EDITOR_PANEL_KIND_TRANSFORM,
     PD_EDITOR_PANEL_KIND_VISUAL,
     PD_EDITOR_PANEL_KIND_LIGHTING,
-    PD_EDITOR_PANEL_KIND_VIEW
+    PD_EDITOR_PANEL_KIND_VIEW,
+    PD_EDITOR_PANEL_KIND_GROUND
 } PdEditorPanelKind;
 
 typedef struct PdEditorPanelState {

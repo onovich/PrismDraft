@@ -66,6 +66,11 @@ int main(void)
         return 1;
     }
 
+    if (!app_context.visual_state.is_ground_visible || app_context.visual_state.ground_y >= 0.0f) {
+        pd_app_lifecycle_controller_shutdown(&app_context);
+        return 1;
+    }
+
     if (pd_animation_timeline_controller_init(&timeline_controller, 2.0f) != PD_CORE_RESULT_OK) {
         pd_app_lifecycle_controller_shutdown(&app_context);
         return 1;

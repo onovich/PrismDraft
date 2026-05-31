@@ -23,6 +23,9 @@ static void pd_app_lifecycle_controller_test_local_init_builds_active_cube_mesh(
     assert(app_context.visual_state.background_color[3] == 255u);
     assert(app_context.visual_state.dark_intensity > 0.0f);
     assert(app_context.visual_state.shadow_color[3] > 0u);
+    assert(app_context.visual_state.is_ground_visible);
+    assert(app_context.visual_state.ground_color[3] > 0u);
+    assert(app_context.visual_state.ground_y < 0.0f);
     assert(app_context.visual_state.shadow_half_width > 0.0f);
     assert(pd_core_mesh_validator_check(&app_context.active_mesh) == PD_CORE_RESULT_OK);
 

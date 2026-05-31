@@ -9,6 +9,7 @@
 #include "prismdraft/render/pd_render_edge_shader.h"
 #include "prismdraft/render/pd_render_face_highlight_buffer.h"
 #include "prismdraft/render/pd_render_face_highlight_config.h"
+#include "prismdraft/render/pd_render_ground_config.h"
 #include "prismdraft/render/pd_render_hardstep_shader.h"
 #include "prismdraft/render/pd_render_mesh_buffer.h"
 #include "prismdraft/render/pd_render_normal_shader.h"
@@ -47,6 +48,7 @@ static const float PD_APP_VIEWPORT_CONTROLLER_SHADOW_OFFSET_STEP = 0.05f;
 static const int PD_APP_VIEWPORT_CONTROLLER_SHADOW_ALPHA_STEP = 12;
 static const int PD_APP_VIEWPORT_CONTROLLER_PANEL_WIDTH = 308;
 static const int PD_APP_VIEWPORT_CONTROLLER_PANEL_MARGIN = 12;
+static const float PD_APP_VIEWPORT_CONTROLLER_GROUND_EPSILON = 0.006f;
 static const unsigned int PD_APP_VIEWPORT_CONTROLLER_INTERACTIVE_WINDOW_FLAGS =
     FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_ALWAYS_RUN;
 
@@ -544,25 +546,21 @@ static PdRenderShadowConfig pd_app_viewport_controller_local_make_shadow_config(
     return shadow_config;
 }
 
-static PdRenderShadowConfig pd_app_viewport_controller_local_make_object_shadow_config(
-    PdRenderShadowConfig shadow_config,
-    const PdEditorTransformState* transform_state)
+static PdRenderGroundConfig pd_app_viewport_controller_local_make_ground_config(
+    const PdEditorVisualState* visual_state)
 {
-    float scale_x;
-    float scale_z;
+    PdRenderGroundConfig ground_config = pd_render_ground_config_default();
 
-    if (transform_state == 0) {
-        return shadow_config;
+    if (visual_state == 0) {
+        return ground_config;
     }
 
-    scale_x = fabsf(transform_state->scale[0]);
-    scale_z = fabsf(transform_state->scale[2]);
-    shadow_config.offset_x += transform_state->position[0];
-    shadow_config.offset_z += transform_state->position[2];
-    shadow_config.half_width *= scale_x;
-    shadow_config.half_depth *= scale_z;
-    shadow_config.skew_x *= scale_x;
-    return shadow_config;
+    ground_config.color = pd_app_viewport_controller_local_make_color(visual_state->ground_color);
+    ground_config.y = visual_state->ground_y;
+    ground_config.size = visual_state->ground_size;
+    ground_config.grid_step = visual_state->ground_grid_step;
+    ground_config.is_visible = visual_state->is_ground_visible;
+    return ground_config;
 }
 
 static const char* pd_app_viewport_controller_local_get_result_name(PdCoreResult result)
@@ -813,6 +811,25 @@ static PdCoreResult pd_app_viewport_controller_local_apply_smoke_case(
         return PD_CORE_RESULT_OK;
     }
 
+    if (strcmp(smoke_case, "ground-hidden") == 0) {
+        app_context->visual_state.is_ground_visible = 0;
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (strcmp(smoke_case, "ground-color-blue") == 0) {
+        app_context->visual_state.ground_color[0] = 118u;
+        app_context->visual_state.ground_color[1] = 176u;
+        app_context->visual_state.ground_color[2] = 224u;
+        app_context->visual_state.ground_color[3] = 128u;
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (strcmp(smoke_case, "ground-move-up") == 0) {
+        app_context->visual_state.ground_y = -0.45f;
+        app_context->visual_state.shadow_plane_y = app_context->visual_state.ground_y;
+        return PD_CORE_RESULT_OK;
+    }
+
     if (strcmp(smoke_case, "modeling-bevel") == 0) {
         return pd_app_viewport_controller_local_apply_modeling_command(app_context, PD_EDITOR_TOOL_KIND_BEVEL);
     }
@@ -1035,6 +1052,10 @@ static void pd_app_viewport_controller_local_update_panel_shortcuts(PdEditorPane
         (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_VIEW);
     }
 
+    if (IsKeyPressed(KEY_F6)) {
+        (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_GROUND);
+    }
+
     if (IsKeyPressed(KEY_TAB)) {
         pd_editor_panel_state_toggle(panel_state);
     }
@@ -1051,7 +1072,7 @@ static PdCoreResult pd_app_viewport_controller_local_rebuild_face_highlight(
 static void pd_app_viewport_controller_local_draw_panel_tabs(PdEditorPanelState* panel_state, Rectangle panel_rect)
 {
     Rectangle tab_rect;
-    float tab_width = (panel_rect.width - 28.0f) / 5.0f;
+    float tab_width = (panel_rect.width - 30.0f) / 6.0f;
 
     if (panel_state == 0) {
         return;
@@ -1095,6 +1116,14 @@ static void pd_app_viewport_controller_local_draw_panel_tabs(PdEditorPanelState*
             "View",
             panel_state->active_panel == PD_EDITOR_PANEL_KIND_VIEW)) {
         (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_VIEW);
+    }
+
+    tab_rect.x += tab_width + 2.0f;
+    if (pd_app_viewport_controller_local_panel_button(
+            tab_rect,
+            "Ground",
+            panel_state->active_panel == PD_EDITOR_PANEL_KIND_GROUND)) {
+        (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_GROUND);
     }
 }
 
@@ -1405,20 +1434,76 @@ static void pd_app_viewport_controller_local_draw_lighting_panel(
     if (pd_app_viewport_controller_local_panel_slider(slider_rect, "Shadow", 0.0f, 255.0f, &shadow_alpha)) {
         app_context->visual_state.shadow_color[3] = pd_app_viewport_controller_local_float_to_u8(shadow_alpha);
     }
+    *panel_y = slider_rect.y + 30.0f;
+}
+
+static void pd_app_viewport_controller_local_draw_ground_panel(
+    PdAppContextEntity* app_context,
+    float panel_x,
+    float* panel_y)
+{
+    Rectangle button_rect;
+    Rectangle slider_rect;
+
+    if (app_context == 0 || panel_y == 0) {
+        return;
+    }
+
+    pd_app_viewport_controller_local_draw_panel_text("Ground", panel_x, *panel_y, 12);
+    *panel_y += 30.0f;
+    button_rect = (Rectangle){ panel_x, *panel_y, 132.0f, 28.0f };
+    if (pd_app_viewport_controller_local_panel_button(
+            button_rect,
+            "Visible",
+            app_context->visual_state.is_ground_visible)) {
+        app_context->visual_state.is_ground_visible = 1;
+    }
+
+    button_rect.x += 142.0f;
+    if (pd_app_viewport_controller_local_panel_button(
+            button_rect,
+            "Hidden",
+            !app_context->visual_state.is_ground_visible)) {
+        app_context->visual_state.is_ground_visible = 0;
+    }
+
+    *panel_y += 48.0f;
+    slider_rect = (Rectangle){ panel_x, *panel_y, 274.0f, 12.0f };
+    (void)pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Ground Y",
+        -3.0f,
+        1.0f,
+        &app_context->visual_state.ground_y);
+    app_context->visual_state.shadow_plane_y = app_context->visual_state.ground_y;
+
     slider_rect.y += 38.0f;
     (void)pd_app_viewport_controller_local_panel_slider(
         slider_rect,
-        "Shadow X",
-        -3.0f,
-        3.0f,
-        &app_context->visual_state.shadow_offset_x);
+        "Grid",
+        0.25f,
+        1.5f,
+        &app_context->visual_state.ground_grid_step);
     slider_rect.y += 38.0f;
-    (void)pd_app_viewport_controller_local_panel_slider(
+    (void)pd_app_viewport_controller_local_panel_u8_slider(
         slider_rect,
-        "Shadow Z",
-        -3.0f,
-        3.0f,
-        &app_context->visual_state.shadow_offset_z);
+        "Ground R",
+        &app_context->visual_state.ground_color[0]);
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_u8_slider(
+        slider_rect,
+        "Ground G",
+        &app_context->visual_state.ground_color[1]);
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_u8_slider(
+        slider_rect,
+        "Ground B",
+        &app_context->visual_state.ground_color[2]);
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_u8_slider(
+        slider_rect,
+        "Ground A",
+        &app_context->visual_state.ground_color[3]);
     *panel_y = slider_rect.y + 30.0f;
 }
 
@@ -1535,6 +1620,9 @@ static PdCoreResult pd_app_viewport_controller_local_update_and_draw_panel(
         case PD_EDITOR_PANEL_KIND_VIEW:
             pd_app_viewport_controller_local_draw_view_panel(camera_state, panel_x, &panel_y);
             return PD_CORE_RESULT_OK;
+        case PD_EDITOR_PANEL_KIND_GROUND:
+            pd_app_viewport_controller_local_draw_ground_panel(app_context, panel_x, &panel_y);
+            return PD_CORE_RESULT_OK;
         default:
             return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
@@ -1640,24 +1728,151 @@ static void pd_app_viewport_controller_local_draw_overlay(
     pd_app_viewport_controller_local_draw_overlay_line(line, &y);
 }
 
-static void pd_app_viewport_controller_local_draw_shadow(PdRenderShadowConfig shadow_config)
+static Vector3 pd_app_viewport_controller_local_transform_render_vertex(
+    const PdRenderMeshBufferVertex* render_vertex,
+    Matrix object_transform)
 {
-    Vector3 near_left = { -shadow_config.half_width + shadow_config.offset_x,
-                          shadow_config.plane_y,
-                          -shadow_config.half_depth + shadow_config.offset_z };
-    Vector3 near_right = { shadow_config.half_width + shadow_config.offset_x,
-                           shadow_config.plane_y,
-                           -shadow_config.half_depth + shadow_config.offset_z };
-    Vector3 far_right = { shadow_config.half_width + shadow_config.offset_x + shadow_config.skew_x,
-                          shadow_config.plane_y,
-                          shadow_config.half_depth + shadow_config.offset_z };
-    Vector3 far_left = { -shadow_config.half_width + shadow_config.offset_x + shadow_config.skew_x,
-                         shadow_config.plane_y,
-                         shadow_config.half_depth + shadow_config.offset_z };
+    Vector3 position = { 0.0f, 0.0f, 0.0f };
+
+    if (render_vertex == 0) {
+        return position;
+    }
+
+    position = (Vector3){ render_vertex->position[0], render_vertex->position[1], render_vertex->position[2] };
+    return Vector3Transform(position, object_transform);
+}
+
+static int pd_app_viewport_controller_local_project_to_ground(
+    Vector3 source,
+    PdRenderShadowConfig shadow_config,
+    Vector3 light_direction,
+    Vector3* projected)
+{
+    float ray_distance;
+
+    if (projected == 0 || fabsf(light_direction.y) <= 0.0001f) {
+        return 0;
+    }
+
+    ray_distance = (shadow_config.plane_y - source.y) / light_direction.y;
+    if (ray_distance < 0.0f) {
+        return 0;
+    }
+
+    projected->x = source.x + (light_direction.x * ray_distance) + shadow_config.offset_x;
+    projected->y = shadow_config.plane_y + PD_APP_VIEWPORT_CONTROLLER_GROUND_EPSILON;
+    projected->z = source.z + (light_direction.z * ray_distance) + shadow_config.offset_z;
+    return 1;
+}
+
+static void pd_app_viewport_controller_local_draw_projected_shadow(
+    PdRenderShadowConfig shadow_config,
+    const PdRenderMeshBuffer* render_mesh_buffer,
+    Matrix object_transform,
+    Vector3 light_direction)
+{
+    uint32_t vertex_index;
+
+    if (render_mesh_buffer == 0 || !pd_render_shadow_config_is_valid(shadow_config)) {
+        return;
+    }
+
+    if (render_mesh_buffer->vertex_count < 3u) {
+        return;
+    }
 
     BeginBlendMode(BLEND_ALPHA);
-    DrawTriangle3D(near_left, far_left, far_right, shadow_config.color);
-    DrawTriangle3D(near_left, far_right, near_right, shadow_config.color);
+    for (vertex_index = 0u; vertex_index + 2u < render_mesh_buffer->vertex_count; vertex_index += 3u) {
+        Vector3 source_a =
+            pd_app_viewport_controller_local_transform_render_vertex(&render_mesh_buffer->vertices[vertex_index], object_transform);
+        Vector3 source_b = pd_app_viewport_controller_local_transform_render_vertex(
+            &render_mesh_buffer->vertices[vertex_index + 1u],
+            object_transform);
+        Vector3 source_c = pd_app_viewport_controller_local_transform_render_vertex(
+            &render_mesh_buffer->vertices[vertex_index + 2u],
+            object_transform);
+        Vector3 shadow_a;
+        Vector3 shadow_b;
+        Vector3 shadow_c;
+
+        if (pd_app_viewport_controller_local_project_to_ground(source_a, shadow_config, light_direction, &shadow_a) &&
+            pd_app_viewport_controller_local_project_to_ground(source_b, shadow_config, light_direction, &shadow_b) &&
+            pd_app_viewport_controller_local_project_to_ground(source_c, shadow_config, light_direction, &shadow_c)) {
+            DrawTriangle3D(shadow_a, shadow_b, shadow_c, shadow_config.color);
+        }
+    }
+    EndBlendMode();
+}
+
+static void pd_app_viewport_controller_local_draw_ground_grid_line(
+    Vector3 start,
+    Vector3 direction,
+    float length,
+    float dash_length,
+    Color color)
+{
+    float offset = 0.0f;
+
+    while (offset < length) {
+        float next_offset = offset + dash_length;
+        Vector3 dash_start;
+        Vector3 dash_end;
+
+        if (next_offset > length) {
+            next_offset = length;
+        }
+
+        dash_start = pd_app_viewport_controller_local_add(start, pd_app_viewport_controller_local_scale(direction, offset));
+        dash_end = pd_app_viewport_controller_local_add(start, pd_app_viewport_controller_local_scale(direction, next_offset));
+        DrawLine3D(dash_start, dash_end, color);
+        offset += dash_length * 1.85f;
+    }
+}
+
+static void pd_app_viewport_controller_local_draw_ground(PdRenderGroundConfig ground_config)
+{
+    float half_size;
+    float line_position;
+    float dash_length;
+    Vector3 near_left;
+    Vector3 near_right;
+    Vector3 far_right;
+    Vector3 far_left;
+
+    if (!ground_config.is_visible || !pd_render_ground_config_is_valid(ground_config)) {
+        return;
+    }
+
+    half_size = ground_config.size * 0.5f;
+    dash_length = ground_config.grid_step * 0.56f;
+    near_left = (Vector3){ -half_size, ground_config.y, -half_size };
+    near_right = (Vector3){ half_size, ground_config.y, -half_size };
+    far_right = (Vector3){ half_size, ground_config.y, half_size };
+    far_left = (Vector3){ -half_size, ground_config.y, half_size };
+
+    BeginBlendMode(BLEND_ALPHA);
+    DrawTriangle3D(near_left, far_left, far_right, ground_config.color);
+    DrawTriangle3D(near_left, far_right, near_right, ground_config.color);
+    EndBlendMode();
+
+    BeginBlendMode(BLEND_ALPHA);
+    for (line_position = -half_size; line_position <= half_size + 0.0001f; line_position += ground_config.grid_step) {
+        Vector3 x_line_start = { -half_size, ground_config.y + (PD_APP_VIEWPORT_CONTROLLER_GROUND_EPSILON * 2.0f), line_position };
+        Vector3 z_line_start = { line_position, ground_config.y + (PD_APP_VIEWPORT_CONTROLLER_GROUND_EPSILON * 2.0f), -half_size };
+
+        pd_app_viewport_controller_local_draw_ground_grid_line(
+            x_line_start,
+            (Vector3){ 1.0f, 0.0f, 0.0f },
+            ground_config.size,
+            dash_length,
+            ground_config.grid_color);
+        pd_app_viewport_controller_local_draw_ground_grid_line(
+            z_line_start,
+            (Vector3){ 0.0f, 0.0f, 1.0f },
+            ground_config.size,
+            dash_length,
+            ground_config.grid_color);
+    }
     EndBlendMode();
 }
 
@@ -1702,6 +1917,8 @@ static void pd_app_viewport_controller_local_render_targets(
     PdEngineCameraState camera_state,
     PdRenderVisualConfig visual_config,
     PdRenderShadowConfig shadow_config,
+    PdRenderGroundConfig ground_config,
+    const PdRenderMeshBuffer* render_mesh_buffer,
     Model* cube_model,
     Model* face_highlight_model,
     int has_face_highlight_model,
@@ -1719,8 +1936,15 @@ static void pd_app_viewport_controller_local_render_targets(
     BeginTextureMode(target_controller->color_depth_target);
     ClearBackground(visual_config.background_color);
     BeginMode3D(camera_state.camera);
-    pd_app_viewport_controller_local_draw_shadow(shadow_config);
     DrawModel(*cube_model, origin, 1.0f, WHITE);
+    pd_app_viewport_controller_local_draw_ground(ground_config);
+    if (ground_config.is_visible) {
+        pd_app_viewport_controller_local_draw_projected_shadow(
+            shadow_config,
+            render_mesh_buffer,
+            object_transform,
+            visual_config.light_direction);
+    }
     if (has_face_highlight_model) {
         face_highlight_model->materials[0].shader = hardstep_shader;
         face_highlight_model->transform = object_transform;
@@ -1869,6 +2093,7 @@ int main(int argc, char** argv)
     PdRenderFaceHighlightConfig face_highlight_config = pd_render_face_highlight_config_default();
     PdRenderVisualConfig visual_config;
     PdRenderShadowConfig shadow_config;
+    PdRenderGroundConfig ground_config;
     PdRenderHardstepShaderConfig shader_config = pd_render_hardstep_shader_config_default();
     PdRenderDepthShaderConfig depth_shader_config = pd_render_depth_shader_config_default();
     PdRenderNormalShaderConfig normal_shader_config = pd_render_normal_shader_config_default();
@@ -1953,9 +2178,9 @@ int main(int argc, char** argv)
     light_direction_location = GetShaderLocation(hardstep_shader, "lightDirection");
     dark_intensity_location = GetShaderLocation(hardstep_shader, "darkIntensity");
     visual_config = pd_app_viewport_controller_local_make_visual_config(&app_context.visual_state);
-    shadow_config = pd_app_viewport_controller_local_make_object_shadow_config(
-        pd_app_viewport_controller_local_make_shadow_config(&app_context.visual_state),
-        &app_context.transform_state);
+    ground_config = pd_app_viewport_controller_local_make_ground_config(&app_context.visual_state);
+    shadow_config = pd_app_viewport_controller_local_make_shadow_config(&app_context.visual_state);
+    shadow_config.plane_y = ground_config.y;
     shader_config.light_direction = visual_config.light_direction;
     shader_config.dark_intensity = visual_config.dark_intensity;
     SetShaderValue(hardstep_shader, light_direction_location, &visual_config.light_direction, SHADER_UNIFORM_VEC3);
@@ -2060,9 +2285,9 @@ int main(int argc, char** argv)
         }
 
         visual_config = pd_app_viewport_controller_local_make_visual_config(&app_context.visual_state);
-        shadow_config = pd_app_viewport_controller_local_make_object_shadow_config(
-            pd_app_viewport_controller_local_make_shadow_config(&app_context.visual_state),
-            &app_context.transform_state);
+        ground_config = pd_app_viewport_controller_local_make_ground_config(&app_context.visual_state);
+        shadow_config = pd_app_viewport_controller_local_make_shadow_config(&app_context.visual_state);
+        shadow_config.plane_y = ground_config.y;
         SetShaderValue(hardstep_shader, light_direction_location, &visual_config.light_direction, SHADER_UNIFORM_VEC3);
         SetShaderValue(hardstep_shader, dark_intensity_location, &visual_config.dark_intensity, SHADER_UNIFORM_FLOAT);
         SetShaderValue(
@@ -2097,6 +2322,8 @@ int main(int argc, char** argv)
             camera_state,
             visual_config,
             shadow_config,
+            ground_config,
+            &render_mesh_buffer,
             &cube_model,
             &face_highlight_model,
             has_face_highlight_model,

@@ -12,11 +12,16 @@ static void pd_editor_visual_state_test_local_initializes_defaults(void)
     assert(visual_state.background_color[0] == 255u);
     assert(visual_state.background_color[3] == 255u);
     assert(visual_state.shadow_color[3] > 0u);
+    assert(visual_state.ground_color[3] > 0u);
     assert(visual_state.light_direction[1] < 0.0f);
     assert(visual_state.dark_intensity > 0.0f);
     assert(visual_state.edge_sample_radius > 0.0f);
     assert(visual_state.edge_depth_threshold > 0.0f);
     assert(visual_state.edge_normal_threshold > 0.0f);
+    assert(visual_state.is_ground_visible);
+    assert(visual_state.ground_y < 0.0f);
+    assert(visual_state.ground_size > 0.0f);
+    assert(visual_state.ground_grid_step > 0.0f);
     assert(visual_state.shadow_half_width > 0.0f);
     assert(visual_state.shadow_half_depth > 0.0f);
 }

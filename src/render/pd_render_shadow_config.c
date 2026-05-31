@@ -6,8 +6,8 @@ PdRenderShadowConfig pd_render_shadow_config_default(void)
 
     config.color = (Color){ 92u, 58u, 74u, 112u };
     config.plane_y = -1.02f;
-    config.offset_x = 0.72f;
-    config.offset_z = 0.78f;
+    config.offset_x = 0.0f;
+    config.offset_z = 0.0f;
     config.half_width = 1.55f;
     config.half_depth = 1.18f;
     config.skew_x = 0.38f;

@@ -9,11 +9,15 @@ typedef struct PdEditorVisualState {
     uint8_t face_color[4];
     uint8_t background_color[4];
     uint8_t shadow_color[4];
+    uint8_t ground_color[4];
     float light_direction[3];
     float dark_intensity;
     float edge_sample_radius;
     float edge_depth_threshold;
     float edge_normal_threshold;
+    float ground_y;
+    float ground_size;
+    float ground_grid_step;
     float shadow_plane_y;
     float shadow_offset_x;
     float shadow_offset_z;
@@ -22,6 +26,7 @@ typedef struct PdEditorVisualState {
     float shadow_skew_x;
     int face_palette_index;
     int background_palette_index;
+    int is_ground_visible;
 } PdEditorVisualState;
 
 PdCoreResult pd_editor_visual_state_init(PdEditorVisualState* visual_state);
