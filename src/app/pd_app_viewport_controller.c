@@ -344,6 +344,22 @@ static PdRenderShadowConfig pd_app_viewport_controller_local_make_shadow_config(
     return shadow_config;
 }
 
+static const char* pd_app_viewport_controller_local_get_result_name(PdCoreResult result)
+{
+    switch (result) {
+        case PD_CORE_RESULT_OK:
+            return "ok";
+        case PD_CORE_RESULT_ERROR_INVALID_ARGUMENT:
+            return "invalid_arg";
+        case PD_CORE_RESULT_ERROR_OUT_OF_MEMORY:
+            return "out_of_memory";
+        case PD_CORE_RESULT_ERROR_TOPOLOGY_INVALID:
+            return "topology_invalid";
+        default:
+            return "unknown";
+    }
+}
+
 static Mesh pd_app_viewport_controller_local_make_mesh(const PdRenderMeshBuffer* render_mesh_buffer)
 {
     Mesh mesh = { 0 };
@@ -410,7 +426,9 @@ static PdCoreResult pd_app_viewport_controller_local_apply_selected_face_color(P
 
     face_index = app_context->selection_state.primary_index;
     if (face_index >= app_context->active_mesh.face_count) {
-        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+        app_context->tool_state.last_result = PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+        pd_editor_selection_state_clear(&app_context->selection_state);
+        return PD_CORE_RESULT_OK;
     }
 
     app_context->active_mesh.faces[face_index].base_color[0] = app_context->visual_state.face_color[0];
@@ -448,13 +466,13 @@ static PdCoreResult pd_app_viewport_controller_local_apply_modeling_command(
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
-    result = pd_app_viewport_controller_local_get_selected_face(app_context, &face_index);
+    result = pd_editor_tool_state_set_active(&app_context->tool_state, tool_kind);
     if (result != PD_CORE_RESULT_OK) {
         app_context->tool_state.last_result = result;
         return result;
     }
 
-    result = pd_editor_tool_state_set_active(&app_context->tool_state, tool_kind);
+    result = pd_app_viewport_controller_local_get_selected_face(app_context, &face_index);
     if (result != PD_CORE_RESULT_OK) {
         app_context->tool_state.last_result = result;
         return result;
@@ -507,7 +525,7 @@ static PdCoreResult pd_app_viewport_controller_local_update_modeling_controls(
     }
 
     if (pd_app_viewport_controller_local_apply_modeling_command(app_context, tool_kind) != PD_CORE_RESULT_OK) {
-        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+        return PD_CORE_RESULT_OK;
     }
 
     *needs_cube_model_rebuild = 1;
@@ -709,6 +727,13 @@ static void pd_app_viewport_controller_local_draw_overlay(
     DrawRectangleLines(12, 12, 372, 170, (Color){ 245u, 245u, 245u, 64u });
 
     (void)snprintf(line, sizeof(line), "tool %s", pd_editor_tool_state_get_name(app_context->tool_state.active_tool));
+    pd_app_viewport_controller_local_draw_overlay_line(line, &y);
+
+    (void)snprintf(
+        line,
+        sizeof(line),
+        "result %s",
+        pd_app_viewport_controller_local_get_result_name(app_context->tool_state.last_result));
     pd_app_viewport_controller_local_draw_overlay_line(line, &y);
 
     if (app_context->selection_state.kind == PD_EDITOR_SELECTION_KIND_FACE) {
