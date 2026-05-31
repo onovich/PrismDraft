@@ -25,6 +25,8 @@ It configures and builds the project, runs the focused interaction tests, captur
 - `ground-hidden`: hiding the ground must produce a visible screenshot difference.
 - `ground-color-blue`: changing the ground color must produce a visible screenshot difference.
 - `ground-move-up`: moving the ground plane must produce a visible screenshot difference.
+- `scene-two-cubes`: creating another cube must produce a visible screenshot difference.
+- `scene-two-cubes-move-second`: moving the second cube must produce a visible screenshot difference from the two-cube scene.
 - `modeling-bevel`: applying `3` through the viewport smoke case must render a screenshot that differs from the default viewport.
 - `modeling-loop-cut`: applying `4` through the viewport smoke case must render a screenshot that differs from the default viewport.
 - `tools\SmokeViewport.cmd`: the default shader path must compile and produce `captures/phase2_cube.png`.
@@ -45,7 +47,9 @@ Manual checks:
 - Click panel tabs and controls; clicks inside the panel should not pick or clear model faces behind the panel.
 - Resize the window while dragging the border; the viewport should continue repainting and should not leave persistent black exposed regions after resize settles.
 - In Model, select a face and click `Inset`, `Extrude`, `Bevel`, and `Loop cut`; each button should update the mesh and selected-face highlight.
+- In Model, click `Create cube`; a second independent cube should appear and become the active object.
 - In Move, drag position, rotate, and scale sliders; the object should update in the next frame, and `Reset` should restore the default transform.
+- Select a face on either cube; Move, Visual face color, and Model commands should apply to the newly selected cube, not all cubes.
 - When the object moves on X/Z, its projected shadow should be derived from the object silhouette and continue to follow the object.
 - In Visual, drag face RGB sliders, background RGB sliders, and outline sliders; selected-face color, background, and edge response should visibly change.
 - In Light, drag light direction, dark intensity, and shadow strength sliders; hard-step lighting and the projected ground shadow should visibly update.

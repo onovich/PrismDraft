@@ -52,6 +52,12 @@ static const float PD_APP_VIEWPORT_CONTROLLER_GROUND_EPSILON = 0.006f;
 static const unsigned int PD_APP_VIEWPORT_CONTROLLER_INTERACTIVE_WINDOW_FLAGS =
     FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_ALWAYS_RUN;
 
+typedef struct PdAppViewportObjectRuntime {
+    PdRenderMeshBuffer render_mesh_buffer;
+    Model model;
+    int has_model;
+} PdAppViewportObjectRuntime;
+
 static int pd_app_viewport_controller_local_has_argument(int argc, char** argv, const char* expected_argument)
 {
     int argument_index;
@@ -579,6 +585,25 @@ static const char* pd_app_viewport_controller_local_get_result_name(PdCoreResult
     }
 }
 
+static PdEditorSceneObjectEntity* pd_app_viewport_controller_local_get_active_object(PdAppContextEntity* app_context)
+{
+    if (app_context == 0) {
+        return 0;
+    }
+
+    return pd_editor_scene_state_get_active(&app_context->scene_state);
+}
+
+static const PdEditorSceneObjectEntity* pd_app_viewport_controller_local_get_active_object_const(
+    const PdAppContextEntity* app_context)
+{
+    if (app_context == 0) {
+        return 0;
+    }
+
+    return pd_editor_scene_state_get_active_const(&app_context->scene_state);
+}
+
 static Mesh pd_app_viewport_controller_local_make_mesh(const PdRenderMeshBuffer* render_mesh_buffer)
 {
     Mesh mesh = { 0 };
@@ -608,32 +633,68 @@ static Mesh pd_app_viewport_controller_local_make_mesh(const PdRenderMeshBuffer*
     return mesh;
 }
 
-static PdCoreResult pd_app_viewport_controller_local_rebuild_cube_model(
-    PdRenderMeshBuffer* render_mesh_buffer,
-    Model* cube_model,
+static void pd_app_viewport_controller_local_unload_object_runtime(PdAppViewportObjectRuntime* object_runtime)
+{
+    if (object_runtime == 0) {
+        return;
+    }
+
+    if (object_runtime->has_model) {
+        object_runtime->model.materials[0].shader = (Shader){ 0 };
+        UnloadModel(object_runtime->model);
+        object_runtime->model = (Model){ 0 };
+        object_runtime->has_model = 0;
+    }
+
+    pd_render_mesh_buffer_free(&object_runtime->render_mesh_buffer);
+}
+
+static PdCoreResult pd_app_viewport_controller_local_rebuild_object_runtime(
+    PdAppViewportObjectRuntime* object_runtime,
     const PdCoreMeshEntity* mesh_entity)
 {
     Mesh cube_mesh;
 
-    if (render_mesh_buffer == 0 || cube_model == 0 || mesh_entity == 0) {
+    if (object_runtime == 0 || mesh_entity == 0) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
-    cube_model->materials[0].shader = (Shader){ 0 };
-    UnloadModel(*cube_model);
-    pd_render_mesh_buffer_free(render_mesh_buffer);
-    if (pd_render_mesh_buffer_build_from_mesh(render_mesh_buffer, mesh_entity) != PD_CORE_RESULT_OK) {
+    pd_app_viewport_controller_local_unload_object_runtime(object_runtime);
+    if (pd_render_mesh_buffer_build_from_mesh(&object_runtime->render_mesh_buffer, mesh_entity) != PD_CORE_RESULT_OK) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
-    cube_mesh = pd_app_viewport_controller_local_make_mesh(render_mesh_buffer);
-    *cube_model = LoadModelFromMesh(cube_mesh);
+    cube_mesh = pd_app_viewport_controller_local_make_mesh(&object_runtime->render_mesh_buffer);
+    object_runtime->model = LoadModelFromMesh(cube_mesh);
+    object_runtime->has_model = 1;
+    return PD_CORE_RESULT_OK;
+}
+
+static PdCoreResult pd_app_viewport_controller_local_rebuild_scene_runtimes(
+    const PdEditorSceneState* scene_state,
+    PdAppViewportObjectRuntime object_runtimes[PD_EDITOR_SCENE_STATE_MAX_OBJECTS])
+{
+    uint32_t object_index;
+
+    if (scene_state == 0 || object_runtimes == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    for (object_index = 0u; object_index < scene_state->object_count; object_index++) {
+        if (pd_app_viewport_controller_local_rebuild_object_runtime(
+                &object_runtimes[object_index],
+                &scene_state->objects[object_index].mesh) != PD_CORE_RESULT_OK) {
+            return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+        }
+    }
+
     return PD_CORE_RESULT_OK;
 }
 
 static PdCoreResult pd_app_viewport_controller_local_apply_selected_face_color(PdAppContextEntity* app_context)
 {
     uint32_t face_index;
+    PdEditorSceneObjectEntity* active_object;
 
     if (app_context == 0) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
@@ -643,17 +704,22 @@ static PdCoreResult pd_app_viewport_controller_local_apply_selected_face_color(P
         return PD_CORE_RESULT_OK;
     }
 
+    active_object = pd_app_viewport_controller_local_get_active_object(app_context);
+    if (active_object == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     face_index = app_context->selection_state.primary_index;
-    if (face_index >= app_context->active_mesh.face_count) {
+    if (face_index >= active_object->mesh.face_count) {
         app_context->tool_state.last_result = PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
         pd_editor_selection_state_clear(&app_context->selection_state);
         return PD_CORE_RESULT_OK;
     }
 
-    app_context->active_mesh.faces[face_index].base_color[0] = app_context->visual_state.face_color[0];
-    app_context->active_mesh.faces[face_index].base_color[1] = app_context->visual_state.face_color[1];
-    app_context->active_mesh.faces[face_index].base_color[2] = app_context->visual_state.face_color[2];
-    app_context->active_mesh.faces[face_index].base_color[3] = app_context->visual_state.face_color[3];
+    active_object->mesh.faces[face_index].base_color[0] = app_context->visual_state.face_color[0];
+    active_object->mesh.faces[face_index].base_color[1] = app_context->visual_state.face_color[1];
+    active_object->mesh.faces[face_index].base_color[2] = app_context->visual_state.face_color[2];
+    active_object->mesh.faces[face_index].base_color[3] = app_context->visual_state.face_color[3];
     return PD_CORE_RESULT_OK;
 }
 
@@ -661,12 +727,19 @@ static PdCoreResult pd_app_viewport_controller_local_get_selected_face(
     const PdAppContextEntity* app_context,
     uint32_t* face_index)
 {
+    const PdEditorSceneObjectEntity* active_object;
+
     if (app_context == 0 || face_index == 0) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
+    active_object = pd_app_viewport_controller_local_get_active_object_const(app_context);
+    if (active_object == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     if (app_context->selection_state.kind != PD_EDITOR_SELECTION_KIND_FACE ||
-        app_context->selection_state.primary_index >= app_context->active_mesh.face_count) {
+        app_context->selection_state.primary_index >= active_object->mesh.face_count) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -680,6 +753,7 @@ static PdCoreResult pd_app_viewport_controller_local_apply_modeling_command(
 {
     uint32_t face_index;
     PdCoreResult result;
+    PdEditorSceneObjectEntity* active_object;
 
     if (app_context == 0) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
@@ -697,8 +771,14 @@ static PdCoreResult pd_app_viewport_controller_local_apply_modeling_command(
         return result;
     }
 
+    active_object = pd_app_viewport_controller_local_get_active_object(app_context);
+    if (active_object == 0) {
+        app_context->tool_state.last_result = PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     result = pd_editor_modeling_service_apply(
-        &app_context->active_mesh,
+        &active_object->mesh,
         face_index,
         tool_kind,
         pd_editor_modeling_service_config_default());
@@ -803,7 +883,33 @@ static PdCoreResult pd_app_viewport_controller_local_apply_smoke_case(
     }
 
     if (strcmp(smoke_case, "transform-move-right") == 0) {
-        app_context->transform_state.position[0] = 0.8f;
+        PdEditorSceneObjectEntity* active_object = pd_app_viewport_controller_local_get_active_object(app_context);
+        if (active_object == 0) {
+            return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+        }
+
+        active_object->transform_state.position[0] = 0.8f;
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (strcmp(smoke_case, "scene-two-cubes") == 0) {
+        return pd_editor_scene_state_create_cube(&app_context->scene_state, 0);
+    }
+
+    if (strcmp(smoke_case, "scene-two-cubes-move-second") == 0) {
+        PdEditorSceneObjectEntity* active_object;
+        PdCoreResult result = pd_editor_scene_state_create_cube(&app_context->scene_state, 0);
+        if (result != PD_CORE_RESULT_OK) {
+            return result;
+        }
+
+        active_object = pd_app_viewport_controller_local_get_active_object(app_context);
+        if (active_object == 0) {
+            return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+        }
+
+        active_object->transform_state.position[0] = 2.1f;
+        active_object->transform_state.position[2] = -0.8f;
         return PD_CORE_RESULT_OK;
     }
 
@@ -1129,29 +1235,33 @@ static void pd_app_viewport_controller_local_draw_panel_tabs(PdEditorPanelState*
 
 static PdCoreResult pd_app_viewport_controller_local_rebuild_panel_models(
     PdAppContextEntity* app_context,
-    PdRenderMeshBuffer* render_mesh_buffer,
-    Model* cube_model,
+    PdAppViewportObjectRuntime object_runtimes[PD_EDITOR_SCENE_STATE_MAX_OBJECTS],
     PdRenderMeshBuffer* face_highlight_buffer,
     Model* face_highlight_model,
     int* has_face_highlight_model,
     PdRenderFaceHighlightConfig face_highlight_config)
 {
     uint32_t face_index = PD_CORE_MESH_ENTITY_INVALID_INDEX;
+    PdEditorSceneObjectEntity* active_object;
 
-    if (app_context == 0 || render_mesh_buffer == 0 || cube_model == 0 || face_highlight_buffer == 0 ||
+    if (app_context == 0 || object_runtimes == 0 || face_highlight_buffer == 0 ||
         face_highlight_model == 0 || has_face_highlight_model == 0) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
-    if (pd_app_viewport_controller_local_rebuild_cube_model(
-            render_mesh_buffer,
-            cube_model,
-            &app_context->active_mesh) != PD_CORE_RESULT_OK) {
+    active_object = pd_app_viewport_controller_local_get_active_object(app_context);
+    if (active_object == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (pd_app_viewport_controller_local_rebuild_object_runtime(
+            &object_runtimes[app_context->scene_state.active_object_index],
+            &active_object->mesh) != PD_CORE_RESULT_OK) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     if (app_context->selection_state.kind == PD_EDITOR_SELECTION_KIND_FACE &&
-        app_context->selection_state.primary_index < app_context->active_mesh.face_count) {
+        app_context->selection_state.primary_index < active_object->mesh.face_count) {
         face_index = app_context->selection_state.primary_index;
     }
 
@@ -1159,15 +1269,14 @@ static PdCoreResult pd_app_viewport_controller_local_rebuild_panel_models(
         face_highlight_buffer,
         face_highlight_model,
         has_face_highlight_model,
-        &app_context->active_mesh,
+        &active_object->mesh,
         face_index,
         face_highlight_config);
 }
 
 static PdCoreResult pd_app_viewport_controller_local_draw_modeling_panel(
     PdAppContextEntity* app_context,
-    PdRenderMeshBuffer* render_mesh_buffer,
-    Model* cube_model,
+    PdAppViewportObjectRuntime object_runtimes[PD_EDITOR_SCENE_STATE_MAX_OBJECTS],
     PdRenderMeshBuffer* face_highlight_buffer,
     Model* face_highlight_model,
     int* has_face_highlight_model,
@@ -1178,6 +1287,7 @@ static PdCoreResult pd_app_viewport_controller_local_draw_modeling_panel(
     Rectangle button_rect;
     PdEditorToolKind tool_kind = PD_EDITOR_TOOL_KIND_VIEW;
     int should_apply = 0;
+    int should_create_cube = 0;
 
     if (app_context == 0 || panel_y == 0) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1212,19 +1322,53 @@ static PdCoreResult pd_app_viewport_controller_local_draw_modeling_panel(
     }
 
     *panel_y += 46.0f;
-    pd_app_viewport_controller_local_draw_panel_text(
-        "Select a face, then click a modeling button.",
-        panel_x,
-        *panel_y,
-        10);
-    *panel_y += 18.0f;
+    button_rect = (Rectangle){ panel_x, *panel_y, 274.0f, 28.0f };
+    if (pd_app_viewport_controller_local_panel_button(button_rect, "Create cube", 0)) {
+        should_create_cube = 1;
+    }
+
+    *panel_y += 42.0f;
+    {
+        char object_text[96];
+        (void)snprintf(
+            object_text,
+            sizeof(object_text),
+            "Object %u / %u",
+            (unsigned int)(app_context->scene_state.active_object_index + 1u),
+            (unsigned int)app_context->scene_state.object_count);
+        pd_app_viewport_controller_local_draw_panel_text(object_text, panel_x, *panel_y, 10);
+        *panel_y += 18.0f;
+    }
+
+    if (should_create_cube) {
+        uint32_t object_index = 0u;
+        if (pd_editor_scene_state_create_cube(&app_context->scene_state, &object_index) != PD_CORE_RESULT_OK) {
+            app_context->tool_state.last_result = PD_CORE_RESULT_ERROR_OUT_OF_MEMORY;
+            return PD_CORE_RESULT_OK;
+        }
+
+        pd_editor_selection_state_clear(&app_context->selection_state);
+        app_context->tool_state.last_result = PD_CORE_RESULT_OK;
+        if (pd_app_viewport_controller_local_rebuild_object_runtime(
+                &object_runtimes[object_index],
+                &app_context->scene_state.objects[object_index].mesh) != PD_CORE_RESULT_OK) {
+            return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+        }
+
+        return pd_app_viewport_controller_local_rebuild_face_highlight(
+            face_highlight_buffer,
+            face_highlight_model,
+            has_face_highlight_model,
+            &app_context->scene_state.objects[object_index].mesh,
+            PD_CORE_MESH_ENTITY_INVALID_INDEX,
+            face_highlight_config);
+    }
 
     if (should_apply &&
         pd_app_viewport_controller_local_apply_modeling_command(app_context, tool_kind) == PD_CORE_RESULT_OK) {
         return pd_app_viewport_controller_local_rebuild_panel_models(
             app_context,
-            render_mesh_buffer,
-            cube_model,
+            object_runtimes,
             face_highlight_buffer,
             face_highlight_model,
             has_face_highlight_model,
@@ -1241,8 +1385,14 @@ static void pd_app_viewport_controller_local_draw_transform_panel(
 {
     Rectangle slider_rect;
     Rectangle button_rect;
+    PdEditorSceneObjectEntity* active_object;
 
     if (app_context == 0 || panel_y == 0) {
+        return;
+    }
+
+    active_object = pd_app_viewport_controller_local_get_active_object(app_context);
+    if (active_object == 0) {
         return;
     }
 
@@ -1254,57 +1404,62 @@ static void pd_app_viewport_controller_local_draw_transform_panel(
         "Position X",
         -3.0f,
         3.0f,
-        &app_context->transform_state.position[0]);
+        &active_object->transform_state.position[0]);
     slider_rect.y += 38.0f;
     (void)pd_app_viewport_controller_local_panel_slider(
         slider_rect,
         "Position Y",
         -3.0f,
         3.0f,
-        &app_context->transform_state.position[1]);
+        &active_object->transform_state.position[1]);
     slider_rect.y += 38.0f;
     (void)pd_app_viewport_controller_local_panel_slider(
         slider_rect,
         "Position Z",
         -3.0f,
         3.0f,
-        &app_context->transform_state.position[2]);
+        &active_object->transform_state.position[2]);
     slider_rect.y += 38.0f;
     (void)pd_app_viewport_controller_local_panel_slider(
         slider_rect,
         "Rotate Y",
         -180.0f,
         180.0f,
-        &app_context->transform_state.rotation_degrees[1]);
+        &active_object->transform_state.rotation_degrees[1]);
     slider_rect.y += 38.0f;
     (void)pd_app_viewport_controller_local_panel_slider(
         slider_rect,
         "Scale",
         0.2f,
         2.5f,
-        &app_context->transform_state.scale[0]);
-    app_context->transform_state.scale[1] = app_context->transform_state.scale[0];
-    app_context->transform_state.scale[2] = app_context->transform_state.scale[0];
+        &active_object->transform_state.scale[0]);
+    active_object->transform_state.scale[1] = active_object->transform_state.scale[0];
+    active_object->transform_state.scale[2] = active_object->transform_state.scale[0];
 
     *panel_y = slider_rect.y + 30.0f;
     button_rect = (Rectangle){ panel_x, *panel_y, 132.0f, 28.0f };
     if (pd_app_viewport_controller_local_panel_button(button_rect, "Reset", 0)) {
-        (void)pd_editor_transform_state_reset(&app_context->transform_state);
+        (void)pd_editor_transform_state_reset(&active_object->transform_state);
     }
     *panel_y += 38.0f;
 }
 
 static PdCoreResult pd_app_viewport_controller_local_draw_visual_panel(
     PdAppContextEntity* app_context,
-    PdRenderMeshBuffer* render_mesh_buffer,
-    Model* cube_model,
+    PdAppViewportObjectRuntime object_runtimes[PD_EDITOR_SCENE_STATE_MAX_OBJECTS],
     float panel_x,
     float* panel_y)
 {
     Rectangle slider_rect;
     int needs_cube_rebuild = 0;
+    PdEditorSceneObjectEntity* active_object;
 
-    if (app_context == 0 || render_mesh_buffer == 0 || cube_model == 0 || panel_y == 0) {
+    if (app_context == 0 || object_runtimes == 0 || panel_y == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    active_object = pd_app_viewport_controller_local_get_active_object(app_context);
+    if (active_object == 0) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -1328,8 +1483,9 @@ static PdCoreResult pd_app_viewport_controller_local_draw_visual_panel(
     if (needs_cube_rebuild) {
         (void)pd_editor_tool_state_set_active(&app_context->tool_state, PD_EDITOR_TOOL_KIND_COLOR);
         if (pd_app_viewport_controller_local_apply_selected_face_color(app_context) != PD_CORE_RESULT_OK ||
-            pd_app_viewport_controller_local_rebuild_cube_model(render_mesh_buffer, cube_model, &app_context->active_mesh) !=
-                PD_CORE_RESULT_OK) {
+            pd_app_viewport_controller_local_rebuild_object_runtime(
+                &object_runtimes[app_context->scene_state.active_object_index],
+                &active_object->mesh) != PD_CORE_RESULT_OK) {
             return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
         }
     }
@@ -1556,8 +1712,7 @@ static void pd_app_viewport_controller_local_draw_view_panel(
 static PdCoreResult pd_app_viewport_controller_local_update_and_draw_panel(
     PdAppContextEntity* app_context,
     PdEngineCameraState* camera_state,
-    PdRenderMeshBuffer* render_mesh_buffer,
-    Model* cube_model,
+    PdAppViewportObjectRuntime object_runtimes[PD_EDITOR_SCENE_STATE_MAX_OBJECTS],
     PdRenderMeshBuffer* face_highlight_buffer,
     Model* face_highlight_model,
     int* has_face_highlight_model,
@@ -1596,8 +1751,7 @@ static PdCoreResult pd_app_viewport_controller_local_update_and_draw_panel(
         case PD_EDITOR_PANEL_KIND_MODELING:
             return pd_app_viewport_controller_local_draw_modeling_panel(
                 app_context,
-                render_mesh_buffer,
-                cube_model,
+                object_runtimes,
                 face_highlight_buffer,
                 face_highlight_model,
                 has_face_highlight_model,
@@ -1610,8 +1764,7 @@ static PdCoreResult pd_app_viewport_controller_local_update_and_draw_panel(
         case PD_EDITOR_PANEL_KIND_VISUAL:
             return pd_app_viewport_controller_local_draw_visual_panel(
                 app_context,
-                render_mesh_buffer,
-                cube_model,
+                object_runtimes,
                 panel_x,
                 &panel_y);
         case PD_EDITOR_PANEL_KIND_LIGHTING:
@@ -1646,12 +1799,18 @@ static void pd_app_viewport_controller_local_draw_overlay(
     char line[128];
     int y = 20;
     const PdEditorTransformState* transform_state;
+    const PdEditorSceneObjectEntity* active_object;
 
     if (app_context == 0) {
         return;
     }
 
-    transform_state = &app_context->transform_state;
+    active_object = pd_app_viewport_controller_local_get_active_object_const(app_context);
+    if (active_object == 0) {
+        return;
+    }
+
+    transform_state = &active_object->transform_state;
     DrawRectangle(12, 12, 372, 170, (Color){ 20u, 23u, 28u, 168u });
     DrawRectangleLines(12, 12, 372, 170, (Color){ 245u, 245u, 245u, 64u });
 
@@ -1666,13 +1825,18 @@ static void pd_app_viewport_controller_local_draw_overlay(
     pd_app_viewport_controller_local_draw_overlay_line(line, &y);
 
     if (app_context->selection_state.kind == PD_EDITOR_SELECTION_KIND_FACE) {
+    (void)snprintf(
+        line,
+        sizeof(line),
+        "object %u face=%u",
+        (unsigned int)active_object->object_id,
+        (unsigned int)app_context->selection_state.primary_index);
+    } else {
         (void)snprintf(
             line,
             sizeof(line),
-            "selection face=%u",
-            (unsigned int)app_context->selection_state.primary_index);
-    } else {
-        (void)snprintf(line, sizeof(line), "selection none");
+            "object %u selection none",
+            (unsigned int)active_object->object_id);
     }
     pd_app_viewport_controller_local_draw_overlay_line(line, &y);
 
@@ -1918,11 +2082,10 @@ static void pd_app_viewport_controller_local_render_targets(
     PdRenderVisualConfig visual_config,
     PdRenderShadowConfig shadow_config,
     PdRenderGroundConfig ground_config,
-    const PdRenderMeshBuffer* render_mesh_buffer,
-    Model* cube_model,
+    const PdEditorSceneState* scene_state,
+    PdAppViewportObjectRuntime object_runtimes[PD_EDITOR_SCENE_STATE_MAX_OBJECTS],
     Model* face_highlight_model,
     int has_face_highlight_model,
-    Matrix object_transform,
     Shader hardstep_shader,
     Shader depth_shader,
     Shader normal_shader)
@@ -1930,24 +2093,50 @@ static void pd_app_viewport_controller_local_render_targets(
     Vector3 origin = { 0.0f, 0.0f, 0.0f };
     Color normal_background = { 128u, 128u, 255u, 255u };
     Color depth_background = { 255u, 255u, 255u, 255u };
+    uint32_t object_index;
 
-    cube_model->materials[0].shader = hardstep_shader;
-    cube_model->transform = object_transform;
     BeginTextureMode(target_controller->color_depth_target);
     ClearBackground(visual_config.background_color);
     BeginMode3D(camera_state.camera);
-    DrawModel(*cube_model, origin, 1.0f, WHITE);
+    if (scene_state != 0 && object_runtimes != 0) {
+        for (object_index = 0u; object_index < scene_state->object_count; object_index++) {
+            Matrix object_transform = pd_app_viewport_controller_local_make_object_transform(
+                &scene_state->objects[object_index].transform_state);
+
+            if (!object_runtimes[object_index].has_model) {
+                continue;
+            }
+
+            object_runtimes[object_index].model.materials[0].shader = hardstep_shader;
+            object_runtimes[object_index].model.transform = object_transform;
+            DrawModel(object_runtimes[object_index].model, origin, 1.0f, WHITE);
+        }
+    }
     pd_app_viewport_controller_local_draw_ground(ground_config);
     if (ground_config.is_visible) {
-        pd_app_viewport_controller_local_draw_projected_shadow(
-            shadow_config,
-            render_mesh_buffer,
-            object_transform,
-            visual_config.light_direction);
+        if (scene_state != 0 && object_runtimes != 0) {
+            for (object_index = 0u; object_index < scene_state->object_count; object_index++) {
+                Matrix object_transform = pd_app_viewport_controller_local_make_object_transform(
+                    &scene_state->objects[object_index].transform_state);
+
+                if (!object_runtimes[object_index].has_model) {
+                    continue;
+                }
+
+                pd_app_viewport_controller_local_draw_projected_shadow(
+                    shadow_config,
+                    &object_runtimes[object_index].render_mesh_buffer,
+                    object_transform,
+                    visual_config.light_direction);
+            }
+        }
     }
     if (has_face_highlight_model) {
         face_highlight_model->materials[0].shader = hardstep_shader;
-        face_highlight_model->transform = object_transform;
+        if (scene_state != 0 && scene_state->active_object_index < scene_state->object_count) {
+            face_highlight_model->transform = pd_app_viewport_controller_local_make_object_transform(
+                &scene_state->objects[scene_state->active_object_index].transform_state);
+        }
         BeginBlendMode(BLEND_ALPHA);
         DrawModel(*face_highlight_model, origin, 1.0f, WHITE);
         EndBlendMode();
@@ -1955,21 +2144,39 @@ static void pd_app_viewport_controller_local_render_targets(
     EndMode3D();
     EndTextureMode();
 
-    cube_model->materials[0].shader = depth_shader;
-    cube_model->transform = object_transform;
     BeginTextureMode(target_controller->depth_target);
     ClearBackground(depth_background);
     BeginMode3D(camera_state.camera);
-    DrawModel(*cube_model, origin, 1.0f, WHITE);
+    if (scene_state != 0 && object_runtimes != 0) {
+        for (object_index = 0u; object_index < scene_state->object_count; object_index++) {
+            if (!object_runtimes[object_index].has_model) {
+                continue;
+            }
+
+            object_runtimes[object_index].model.materials[0].shader = depth_shader;
+            object_runtimes[object_index].model.transform = pd_app_viewport_controller_local_make_object_transform(
+                &scene_state->objects[object_index].transform_state);
+            DrawModel(object_runtimes[object_index].model, origin, 1.0f, WHITE);
+        }
+    }
     EndMode3D();
     EndTextureMode();
 
-    cube_model->materials[0].shader = normal_shader;
-    cube_model->transform = object_transform;
     BeginTextureMode(target_controller->normal_target);
     ClearBackground(normal_background);
     BeginMode3D(camera_state.camera);
-    DrawModel(*cube_model, origin, 1.0f, WHITE);
+    if (scene_state != 0 && object_runtimes != 0) {
+        for (object_index = 0u; object_index < scene_state->object_count; object_index++) {
+            if (!object_runtimes[object_index].has_model) {
+                continue;
+            }
+
+            object_runtimes[object_index].model.materials[0].shader = normal_shader;
+            object_runtimes[object_index].model.transform = pd_app_viewport_controller_local_make_object_transform(
+                &scene_state->objects[object_index].transform_state);
+            DrawModel(object_runtimes[object_index].model, origin, 1.0f, WHITE);
+        }
+    }
     EndMode3D();
     EndTextureMode();
 }
@@ -2029,58 +2236,74 @@ static PdCoreResult pd_app_viewport_controller_local_pick_face(
     Model* face_highlight_model,
     int* has_face_highlight_model,
     PdRenderFaceHighlightConfig face_highlight_config,
-    Camera3D camera,
-    const PdEditorTransformState* transform_state)
+    Camera3D camera)
 {
     Ray mouse_ray;
     PdEditorPickServiceHit hit;
-    Matrix object_transform;
-    Matrix inverse_transform;
-    Vector3 local_origin;
-    Vector3 local_end;
-    Vector3 local_direction;
     Vector3 world_end;
-    float ray_origin[3];
-    float ray_direction[3];
     uint32_t face_index = PD_CORE_MESH_ENTITY_INVALID_INDEX;
+    uint32_t object_index;
+    uint32_t hit_object_index = PD_CORE_MESH_ENTITY_INVALID_INDEX;
+    float best_distance = 1000000000.0f;
 
     if (app_context == 0) {
         return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     mouse_ray = GetMouseRay(GetMousePosition(), camera);
-    object_transform = pd_app_viewport_controller_local_make_object_transform(transform_state);
-    inverse_transform = MatrixInvert(object_transform);
     world_end = pd_app_viewport_controller_local_add(mouse_ray.position, mouse_ray.direction);
-    local_origin = Vector3Transform(mouse_ray.position, inverse_transform);
-    local_end = Vector3Transform(world_end, inverse_transform);
-    local_direction = Vector3Normalize(pd_app_viewport_controller_local_subtract(local_end, local_origin));
-    ray_origin[0] = local_origin.x;
-    ray_origin[1] = local_origin.y;
-    ray_origin[2] = local_origin.z;
-    ray_direction[0] = local_direction.x;
-    ray_direction[1] = local_direction.y;
-    ray_direction[2] = local_direction.z;
 
-    if (pd_editor_pick_service_pick_face(&app_context->active_mesh, ray_origin, ray_direction, &hit) !=
-        PD_CORE_RESULT_OK) {
-        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
-    }
+    for (object_index = 0u; object_index < app_context->scene_state.object_count; object_index++) {
+        const PdEditorSceneObjectEntity* object_entity = &app_context->scene_state.objects[object_index];
+        Matrix object_transform =
+            pd_app_viewport_controller_local_make_object_transform(&object_entity->transform_state);
+        Matrix inverse_transform = MatrixInvert(object_transform);
+        Vector3 local_origin = Vector3Transform(mouse_ray.position, inverse_transform);
+        Vector3 local_end = Vector3Transform(world_end, inverse_transform);
+        Vector3 local_direction = Vector3Normalize(pd_app_viewport_controller_local_subtract(local_end, local_origin));
+        float ray_origin[3];
+        float ray_direction[3];
 
-    if (hit.has_hit) {
-        face_index = hit.face_index;
-        if (pd_editor_selection_state_select_face(&app_context->selection_state, face_index) != PD_CORE_RESULT_OK) {
+        ray_origin[0] = local_origin.x;
+        ray_origin[1] = local_origin.y;
+        ray_origin[2] = local_origin.z;
+        ray_direction[0] = local_direction.x;
+        ray_direction[1] = local_direction.y;
+        ray_direction[2] = local_direction.z;
+
+        if (pd_editor_pick_service_pick_face(&object_entity->mesh, ray_origin, ray_direction, &hit) !=
+            PD_CORE_RESULT_OK) {
             return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
         }
-    } else {
+
+        if (hit.has_hit && hit.distance < best_distance) {
+            best_distance = hit.distance;
+            face_index = hit.face_index;
+            hit_object_index = object_index;
+        }
+    }
+
+    if (hit_object_index == PD_CORE_MESH_ENTITY_INVALID_INDEX) {
         pd_editor_selection_state_clear(&app_context->selection_state);
+        return pd_app_viewport_controller_local_rebuild_face_highlight(
+            face_highlight_buffer,
+            face_highlight_model,
+            has_face_highlight_model,
+            &app_context->scene_state.objects[app_context->scene_state.active_object_index].mesh,
+            PD_CORE_MESH_ENTITY_INVALID_INDEX,
+            face_highlight_config);
+    }
+
+    if (pd_editor_scene_state_set_active(&app_context->scene_state, hit_object_index) != PD_CORE_RESULT_OK ||
+        pd_editor_selection_state_select_face(&app_context->selection_state, face_index) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     return pd_app_viewport_controller_local_rebuild_face_highlight(
         face_highlight_buffer,
         face_highlight_model,
         has_face_highlight_model,
-        &app_context->active_mesh,
+        &app_context->scene_state.objects[hit_object_index].mesh,
         face_index,
         face_highlight_config);
 }
@@ -2099,10 +2322,8 @@ int main(int argc, char** argv)
     PdRenderNormalShaderConfig normal_shader_config = pd_render_normal_shader_config_default();
     PdRenderEdgeShaderConfig edge_shader_config = pd_render_edge_shader_config_default();
     PdRenderTargetController target_controller = { 0 };
-    PdRenderMeshBuffer render_mesh_buffer = { 0 };
+    PdAppViewportObjectRuntime object_runtimes[PD_EDITOR_SCENE_STATE_MAX_OBJECTS] = { 0 };
     PdRenderMeshBuffer face_highlight_buffer = { 0 };
-    Mesh cube_mesh;
-    Model cube_model;
     Model face_highlight_model = { 0 };
     Shader hardstep_shader;
     Shader depth_shader;
@@ -2123,7 +2344,7 @@ int main(int argc, char** argv)
     int is_interactive = pd_app_viewport_controller_local_has_argument(argc, argv, "--interactive");
     const char* smoke_case = pd_app_viewport_controller_local_get_argument_value(argc, argv, "--smoke-case");
     int has_face_highlight_model = 0;
-    int needs_cube_model_rebuild = 0;
+    int needs_scene_model_rebuild = 0;
     int needs_face_highlight_rebuild = 0;
     int run_result = 0;
     char capture_path[256] = "captures/phase2_cube.png";
@@ -2151,11 +2372,6 @@ int main(int argc, char** argv)
         (void)snprintf(capture_path, sizeof(capture_path), "captures/%s.png", smoke_case);
     }
 
-    if (pd_render_mesh_buffer_build_from_mesh(&render_mesh_buffer, &app_context.active_mesh) != PD_CORE_RESULT_OK) {
-        pd_app_lifecycle_controller_shutdown(&app_context);
-        return 1;
-    }
-
     SetConfigFlags((is_interactive ? PD_APP_VIEWPORT_CONTROLLER_INTERACTIVE_WINDOW_FLAGS : FLAG_WINDOW_HIDDEN) |
                    FLAG_MSAA_4X_HINT);
     InitWindow(window_config.width, window_config.height, window_config.title);
@@ -2166,7 +2382,6 @@ int main(int argc, char** argv)
         PD_CORE_RESULT_OK) {
         CloseWindow();
         pd_render_mesh_buffer_free(&face_highlight_buffer);
-        pd_render_mesh_buffer_free(&render_mesh_buffer);
         pd_app_lifecycle_controller_shutdown(&app_context);
         return 1;
     }
@@ -2201,23 +2416,36 @@ int main(int argc, char** argv)
     SetShaderValue(edge_shader, edge_depth_threshold_location, &visual_config.edge_depth_threshold, SHADER_UNIFORM_FLOAT);
     SetShaderValue(edge_shader, edge_normal_threshold_location, &visual_config.edge_normal_threshold, SHADER_UNIFORM_FLOAT);
 
-    cube_mesh = pd_app_viewport_controller_local_make_mesh(&render_mesh_buffer);
-    cube_model = LoadModelFromMesh(cube_mesh);
-    if (pd_app_viewport_controller_local_rebuild_face_highlight(
-            &face_highlight_buffer,
-            &face_highlight_model,
-            &has_face_highlight_model,
-            &app_context.active_mesh,
-            app_context.selection_state.primary_index,
-            face_highlight_config) != PD_CORE_RESULT_OK) {
-        UnloadModel(cube_model);
+    if (pd_app_viewport_controller_local_rebuild_scene_runtimes(&app_context.scene_state, object_runtimes) !=
+        PD_CORE_RESULT_OK) {
         UnloadShader(edge_shader);
         UnloadShader(normal_shader);
         UnloadShader(depth_shader);
         UnloadShader(hardstep_shader);
         pd_render_target_controller_free(&target_controller);
         CloseWindow();
-        pd_render_mesh_buffer_free(&render_mesh_buffer);
+        pd_app_lifecycle_controller_shutdown(&app_context);
+        return 1;
+    }
+
+    if (pd_app_viewport_controller_local_rebuild_face_highlight(
+            &face_highlight_buffer,
+            &face_highlight_model,
+            &has_face_highlight_model,
+            &app_context.scene_state.objects[app_context.scene_state.active_object_index].mesh,
+            app_context.selection_state.primary_index,
+            face_highlight_config) != PD_CORE_RESULT_OK) {
+        uint32_t object_index;
+
+        for (object_index = 0u; object_index < PD_EDITOR_SCENE_STATE_MAX_OBJECTS; object_index++) {
+            pd_app_viewport_controller_local_unload_object_runtime(&object_runtimes[object_index]);
+        }
+        UnloadShader(edge_shader);
+        UnloadShader(normal_shader);
+        UnloadShader(depth_shader);
+        UnloadShader(hardstep_shader);
+        pd_render_target_controller_free(&target_controller);
+        CloseWindow();
         pd_app_lifecycle_controller_shutdown(&app_context);
         return 1;
     }
@@ -2227,42 +2455,46 @@ int main(int argc, char** argv)
         int screen_height = GetScreenHeight();
 
         if (is_interactive) {
-            needs_cube_model_rebuild = 0;
+            PdEditorSceneObjectEntity* active_object = pd_app_viewport_controller_local_get_active_object(&app_context);
+
+            needs_scene_model_rebuild = 0;
             needs_face_highlight_rebuild = 0;
             pd_app_viewport_controller_local_update_panel_shortcuts(&app_context.panel_state);
             pd_app_viewport_controller_local_update_camera(&camera_state);
             pd_app_viewport_controller_local_update_transform_tool(&app_context.tool_state);
-            pd_app_viewport_controller_local_update_transform(&app_context.transform_state);
+            if (active_object != 0) {
+                pd_app_viewport_controller_local_update_transform(&active_object->transform_state);
+            }
             if (pd_app_viewport_controller_local_update_visual_controls(
                     &app_context,
-                    &needs_cube_model_rebuild) != PD_CORE_RESULT_OK) {
+                    &needs_scene_model_rebuild) != PD_CORE_RESULT_OK) {
                 run_result = 1;
                 break;
             }
 
             if (pd_app_viewport_controller_local_update_modeling_controls(
                     &app_context,
-                    &needs_cube_model_rebuild,
+                    &needs_scene_model_rebuild,
                     &needs_face_highlight_rebuild) != PD_CORE_RESULT_OK) {
                 run_result = 1;
                 break;
             }
 
-            if (needs_cube_model_rebuild &&
-                pd_app_viewport_controller_local_rebuild_cube_model(
-                    &render_mesh_buffer,
-                    &cube_model,
-                    &app_context.active_mesh) != PD_CORE_RESULT_OK) {
+            active_object = pd_app_viewport_controller_local_get_active_object(&app_context);
+            if (needs_scene_model_rebuild && active_object != 0 &&
+                pd_app_viewport_controller_local_rebuild_object_runtime(
+                    &object_runtimes[app_context.scene_state.active_object_index],
+                    &active_object->mesh) != PD_CORE_RESULT_OK) {
                 run_result = 1;
                 break;
             }
 
-            if (needs_face_highlight_rebuild &&
+            if (needs_face_highlight_rebuild && active_object != 0 &&
                 pd_app_viewport_controller_local_rebuild_face_highlight(
                     &face_highlight_buffer,
                     &face_highlight_model,
                     &has_face_highlight_model,
-                    &app_context.active_mesh,
+                    &active_object->mesh,
                     app_context.selection_state.primary_index,
                     face_highlight_config) != PD_CORE_RESULT_OK) {
                 run_result = 1;
@@ -2277,8 +2509,7 @@ int main(int argc, char** argv)
                     &face_highlight_model,
                     &has_face_highlight_model,
                     face_highlight_config,
-                    camera_state.camera,
-                    &app_context.transform_state) != PD_CORE_RESULT_OK) {
+                    camera_state.camera) != PD_CORE_RESULT_OK) {
                 run_result = 1;
                 break;
             }
@@ -2323,11 +2554,10 @@ int main(int argc, char** argv)
             visual_config,
             shadow_config,
             ground_config,
-            &render_mesh_buffer,
-            &cube_model,
+            &app_context.scene_state,
+            object_runtimes,
             &face_highlight_model,
             has_face_highlight_model,
-            pd_app_viewport_controller_local_make_object_transform(&app_context.transform_state),
             hardstep_shader,
             depth_shader,
             normal_shader);
@@ -2355,8 +2585,7 @@ int main(int argc, char** argv)
             if (pd_app_viewport_controller_local_update_and_draw_panel(
                     &app_context,
                     &camera_state,
-                    &render_mesh_buffer,
-                    &cube_model,
+                    object_runtimes,
                     &face_highlight_buffer,
                     &face_highlight_model,
                     &has_face_highlight_model,
@@ -2375,9 +2604,14 @@ int main(int argc, char** argv)
         TakeScreenshot(capture_path);
     }
 
-    cube_model.materials[0].shader = (Shader){ 0 };
+    {
+        uint32_t object_index;
+
+        for (object_index = 0u; object_index < PD_EDITOR_SCENE_STATE_MAX_OBJECTS; object_index++) {
+            pd_app_viewport_controller_local_unload_object_runtime(&object_runtimes[object_index]);
+        }
+    }
     pd_app_viewport_controller_local_unload_face_highlight_model(&face_highlight_model, &has_face_highlight_model);
-    UnloadModel(cube_model);
     UnloadShader(edge_shader);
     UnloadShader(normal_shader);
     UnloadShader(depth_shader);
@@ -2386,7 +2620,6 @@ int main(int argc, char** argv)
     CloseWindow();
 
     pd_render_mesh_buffer_free(&face_highlight_buffer);
-    pd_render_mesh_buffer_free(&render_mesh_buffer);
     pd_app_lifecycle_controller_shutdown(&app_context);
     return run_result;
 }

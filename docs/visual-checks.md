@@ -117,6 +117,7 @@ Controls:
 - `F6`: open the Ground panel.
 - `Tab`: hide or show the current operation panel.
 - Model panel buttons: apply inset, extrude, bevel, or loop cut to the selected face.
+- Model panel Create cube: add a new independent cube and make it active.
 - Move panel sliders: adjust object position, Y rotation, and uniform scale; `Reset` restores transform defaults.
 - Moving the object on X/Z should move the projected shadow with the object silhouette.
 - Visual panel sliders: adjust selected-face RGB, background RGB, outline radius, depth threshold, and normal threshold.
@@ -158,6 +159,7 @@ Current comparison:
 - Pass: Object transform movement is applied to the shadow footprint, so the designed shadow stays under the moved object.
 - Pass: The default shadow is now projected from the flattened mesh triangles along the light direction onto the ground plane, replacing the fixed fake shadow quad.
 - Pass: The viewport draws a semi-transparent ground plane with dashed grid lines and panel controls for visibility, Y position, and RGBA.
+- Pass: Scene state now supports multiple independent cube objects; rendering, picking, transform, face color, modeling, export, timeline, and smoke paths use the active object.
 - Pass: The View panel can switch the Raylib camera between orthographic and perspective projection.
 - Pass: Interactive modeling shortcuts call the existing core inset, extrude, bevel, and loop cut controllers, then rebuild the viewport mesh and selected-face highlight.
 - Watch: Keyboard controls remain as fallback smoke inputs; day-to-day editing should use the operation panel, with shortcuts mainly opening or switching panels.

@@ -119,6 +119,8 @@ $cameraPerspectivePath = Invoke-ViewportCase -CaseName "camera-perspective"
 $groundHiddenPath = Invoke-ViewportCase -CaseName "ground-hidden"
 $groundColorBluePath = Invoke-ViewportCase -CaseName "ground-color-blue"
 $groundMoveUpPath = Invoke-ViewportCase -CaseName "ground-move-up"
+$sceneTwoCubesPath = Invoke-ViewportCase -CaseName "scene-two-cubes"
+$sceneTwoCubesMoveSecondPath = Invoke-ViewportCase -CaseName "scene-two-cubes-move-second"
 $bevelPath = Invoke-ViewportCase -CaseName "modeling-bevel"
 $loopCutPath = Invoke-ViewportCase -CaseName "modeling-loop-cut"
 
@@ -130,5 +132,7 @@ Assert-VisualDifference -Label "camera perspective" -LeftPath $defaultPath -Righ
 Assert-VisualDifference -Label "ground hidden" -LeftPath $defaultPath -RightPath $groundHiddenPath -MinimumAverage 1.0 -MinimumChangedRatio 0.02 -MinimumMax 20.0
 Assert-VisualDifference -Label "ground color" -LeftPath $defaultPath -RightPath $groundColorBluePath -MinimumAverage 1.0 -MinimumChangedRatio 0.02 -MinimumMax 20.0
 Assert-VisualDifference -Label "ground move" -LeftPath $defaultPath -RightPath $groundMoveUpPath -MinimumAverage 0.5 -MinimumChangedRatio 0.01 -MinimumMax 10.0
+Assert-VisualDifference -Label "scene create cube" -LeftPath $defaultPath -RightPath $sceneTwoCubesPath -MinimumAverage 1.0 -MinimumChangedRatio 0.02 -MinimumMax 20.0
+Assert-VisualDifference -Label "scene move second cube" -LeftPath $sceneTwoCubesPath -RightPath $sceneTwoCubesMoveSecondPath -MinimumAverage 1.0 -MinimumChangedRatio 0.02 -MinimumMax 20.0
 Assert-VisualDifference -Label "bevel modeling" -LeftPath $defaultPath -RightPath $bevelPath -MinimumAverage 0.15 -MinimumChangedRatio 0.001 -MinimumMax 20.0
 Assert-VisualDifference -Label "loop cut modeling" -LeftPath $defaultPath -RightPath $loopCutPath -MinimumAverage 0.15 -MinimumChangedRatio 0.001 -MinimumMax 20.0

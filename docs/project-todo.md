@@ -38,11 +38,12 @@ These items track the issues and expected controls from manual smoke. Do not rem
 - [x] Replace the fixed fake shadow quad with a mesh-projected ground shadow driven by the current light direction.
 - [x] Add a semi-transparent ground plane with dashed infinite-canvas-style grid lines.
 - [x] Add Ground panel controls for showing/hiding the ground, moving it on Y, and changing its color/alpha.
-- [ ] Add scene object storage so multiple independent cube meshes can exist at once.
-- [ ] Add a Model panel action to create a new cube in the scene.
-- [ ] Change picking and selection from single-mesh face selection to object+face selection.
-- [ ] Route transform, face color, modeling commands, export, timeline, and smoke paths through the selected object.
-- [ ] Revisit ground/shadow draw ordering after multi-object support so ground hides below-plane geometry across all objects.
+- [x] Add scene object storage so multiple independent cube meshes can exist at once.
+- [x] Add a Model panel action to create a new cube in the scene.
+- [x] Change picking and selection from single-mesh face selection to active-object+face selection.
+- [x] Route transform, face color, modeling commands, export, timeline, and smoke paths through the selected object.
+- [x] Render all scene objects with independent transforms and projected shadows.
+- [ ] Revisit deeper multi-object UX polish: object list, delete/duplicate, object names, and explicit object selection controls.
 
 ## Phase 0: Preparation
 
@@ -164,12 +165,14 @@ These items track the issues and expected controls from manual smoke. Do not rem
 - [x] Draw a semi-transparent ground plane with dashed grid lines in the viewport.
 - [x] Project the actual flattened mesh triangles along the light direction onto the ground plane for object-shaped shadows.
 - [x] Add interaction smoke cases for ground hide, ground color, and ground movement.
-- [ ] Define scene object entity/state with contiguous object slots, each owning mesh and PRS transform.
-- [ ] Migrate the existing active cube into scene object slot 0 without breaking current tests.
-- [ ] Add object selection identity alongside face selection.
-- [ ] Render and pick all scene objects.
-- [ ] Add a Create Cube action to the operation panel.
-- [ ] Apply modeling, transform, visual face color, export, and animation operations to the selected object.
+- [x] Define scene object entity/state with contiguous object slots, each owning mesh and PRS transform.
+- [x] Migrate the existing active cube into scene object slot 0 without breaking current tests.
+- [x] Add active-object identity alongside face selection.
+- [x] Render and pick all scene objects.
+- [x] Add a Create Cube action to the operation panel.
+- [x] Apply modeling, transform, visual face color, export, and animation operations to the selected object.
+- [x] Add smoke cases for creating two cubes and moving the second cube independently.
+- [ ] Add explicit object list UI and object deletion controls.
 
 ## Always-On Checks
 

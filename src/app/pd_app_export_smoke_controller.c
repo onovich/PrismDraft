@@ -8,6 +8,7 @@
 int main(void)
 {
     PdAppContextEntity app_context;
+    PdEditorSceneObjectEntity* active_object;
     PdExportMeshBuffer export_mesh_buffer = { 0 };
     PdEditorModelingServiceConfig modeling_config = pd_editor_modeling_service_config_default();
     int run_result = 0;
@@ -26,8 +27,14 @@ int main(void)
         return 1;
     }
 
+    active_object = pd_editor_scene_state_get_active(&app_context.scene_state);
+    if (active_object == 0) {
+        pd_app_lifecycle_controller_shutdown(&app_context);
+        return 1;
+    }
+
     if (pd_editor_modeling_service_apply(
-            &app_context.active_mesh,
+            &active_object->mesh,
             app_context.selection_state.primary_index,
             PD_EDITOR_TOOL_KIND_EXTRUDE,
             modeling_config) != PD_CORE_RESULT_OK) {
@@ -35,7 +42,7 @@ int main(void)
         return 1;
     }
 
-    if (pd_export_mesh_buffer_build_from_mesh(&export_mesh_buffer, &app_context.active_mesh) != PD_CORE_RESULT_OK) {
+    if (pd_export_mesh_buffer_build_from_mesh(&export_mesh_buffer, &active_object->mesh) != PD_CORE_RESULT_OK) {
         pd_app_lifecycle_controller_shutdown(&app_context);
         return 1;
     }

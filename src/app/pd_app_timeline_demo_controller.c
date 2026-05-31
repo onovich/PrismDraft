@@ -34,14 +34,20 @@ static void pd_app_timeline_demo_controller_local_apply_pose(
     const PdAnimationPrsPoseEntity* pose_entity)
 {
     int component_index;
+    PdEditorSceneObjectEntity* active_object;
 
     if (app_context == 0 || pose_entity == 0) {
         return;
     }
 
+    active_object = pd_editor_scene_state_get_active(&app_context->scene_state);
+    if (active_object == 0) {
+        return;
+    }
+
     for (component_index = 0; component_index < 3; component_index++) {
-        app_context->transform_state.position[component_index] = pose_entity->position[component_index];
-        app_context->transform_state.scale[component_index] = pose_entity->scale[component_index];
+        active_object->transform_state.position[component_index] = pose_entity->position[component_index];
+        active_object->transform_state.scale[component_index] = pose_entity->scale[component_index];
     }
 }
 
@@ -51,6 +57,7 @@ int main(void)
     PdAnimationTimelineController timeline_controller;
     PdAnimationPrsTrackEntity track_entity;
     PdAnimationPrsPoseEntity pose_entity;
+    PdEditorSceneObjectEntity* active_object;
     PdAnimationPrsKeyframeEntity first_keyframe =
         pd_app_timeline_demo_controller_local_keyframe(0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
     PdAnimationPrsKeyframeEntity second_keyframe =
@@ -97,10 +104,12 @@ int main(void)
 
     if (run_result == 0) {
         pd_app_timeline_demo_controller_local_apply_pose(&app_context, &pose_entity);
-        if (!pd_app_timeline_demo_controller_local_near(app_context.transform_state.position[0], 0.4f) ||
-            !pd_app_timeline_demo_controller_local_near(app_context.transform_state.position[1], 0.2f) ||
-            !pd_app_timeline_demo_controller_local_near(app_context.transform_state.position[2], -0.3f) ||
-            !pd_app_timeline_demo_controller_local_near(app_context.transform_state.scale[0], 1.2f)) {
+        active_object = pd_editor_scene_state_get_active(&app_context.scene_state);
+        if (active_object == 0 ||
+            !pd_app_timeline_demo_controller_local_near(active_object->transform_state.position[0], 0.4f) ||
+            !pd_app_timeline_demo_controller_local_near(active_object->transform_state.position[1], 0.2f) ||
+            !pd_app_timeline_demo_controller_local_near(active_object->transform_state.position[2], -0.3f) ||
+            !pd_app_timeline_demo_controller_local_near(active_object->transform_state.scale[0], 1.2f)) {
             run_result = 1;
         }
     }
