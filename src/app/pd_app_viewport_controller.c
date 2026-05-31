@@ -1,6 +1,7 @@
 #include "prismdraft/app/pd_app_lifecycle_controller.h"
 #include "prismdraft/core/pd_core_mesh_entity.h"
 #include "prismdraft/editor/pd_editor_modeling_service.h"
+#include "prismdraft/editor/pd_editor_panel_state.h"
 #include "prismdraft/editor/pd_editor_pick_service.h"
 #include "prismdraft/engine/pd_engine_camera_controller.h"
 #include "prismdraft/engine/pd_engine_window_config.h"
@@ -41,6 +42,8 @@ static const float PD_APP_VIEWPORT_CONTROLLER_LIGHT_STEP = 0.04f;
 static const float PD_APP_VIEWPORT_CONTROLLER_DARK_INTENSITY_STEP = 0.12f;
 static const float PD_APP_VIEWPORT_CONTROLLER_SHADOW_OFFSET_STEP = 0.05f;
 static const int PD_APP_VIEWPORT_CONTROLLER_SHADOW_ALPHA_STEP = 12;
+static const int PD_APP_VIEWPORT_CONTROLLER_PANEL_WIDTH = 308;
+static const int PD_APP_VIEWPORT_CONTROLLER_PANEL_MARGIN = 12;
 
 static int pd_app_viewport_controller_local_has_argument(int argc, char** argv, const char* expected_argument)
 {
@@ -316,6 +319,170 @@ static Color pd_app_viewport_controller_local_make_color(const uint8_t color[4])
     }
 
     return (Color){ color[0], color[1], color[2], color[3] };
+}
+
+static uint8_t pd_app_viewport_controller_local_float_to_u8(float value)
+{
+    float clamped_value = pd_app_viewport_controller_local_clamp(value, 0.0f, 255.0f);
+
+    return (uint8_t)(clamped_value + 0.5f);
+}
+
+static Rectangle pd_app_viewport_controller_local_get_panel_rect(void)
+{
+    int screen_width = GetScreenWidth();
+    int screen_height = GetScreenHeight();
+    float panel_x = (float)(screen_width - PD_APP_VIEWPORT_CONTROLLER_PANEL_WIDTH -
+                            PD_APP_VIEWPORT_CONTROLLER_PANEL_MARGIN);
+    float panel_height = (float)(screen_height - (PD_APP_VIEWPORT_CONTROLLER_PANEL_MARGIN * 2));
+
+    if (panel_x < (float)PD_APP_VIEWPORT_CONTROLLER_PANEL_MARGIN) {
+        panel_x = (float)PD_APP_VIEWPORT_CONTROLLER_PANEL_MARGIN;
+    }
+
+    if (panel_height < 240.0f) {
+        panel_height = 240.0f;
+    }
+
+    return (Rectangle){ panel_x,
+                        (float)PD_APP_VIEWPORT_CONTROLLER_PANEL_MARGIN,
+                        (float)PD_APP_VIEWPORT_CONTROLLER_PANEL_WIDTH,
+                        panel_height };
+}
+
+static int pd_app_viewport_controller_local_point_in_rect(Vector2 point, Rectangle rectangle)
+{
+    return point.x >= rectangle.x && point.x <= rectangle.x + rectangle.width && point.y >= rectangle.y &&
+           point.y <= rectangle.y + rectangle.height;
+}
+
+static int pd_app_viewport_controller_local_is_panel_mouse_target(const PdAppContextEntity* app_context)
+{
+    if (app_context == 0 || !app_context->panel_state.is_open) {
+        return 0;
+    }
+
+    return pd_app_viewport_controller_local_point_in_rect(
+        GetMousePosition(),
+        pd_app_viewport_controller_local_get_panel_rect());
+}
+
+static void pd_app_viewport_controller_local_draw_panel_text(const char* text, float x, float y, int font_size)
+{
+    DrawText(text, (int)x, (int)y, font_size, (Color){ 236u, 240u, 244u, 235u });
+}
+
+static int pd_app_viewport_controller_local_panel_button(Rectangle rectangle, const char* label, int is_active)
+{
+    Vector2 mouse_position = GetMousePosition();
+    int is_hovered = pd_app_viewport_controller_local_point_in_rect(mouse_position, rectangle);
+    Color fill_color = is_active ? (Color){ 90u, 140u, 180u, 226u } : (Color){ 42u, 47u, 56u, 220u };
+    Color border_color = is_hovered ? (Color){ 240u, 245u, 250u, 210u } : (Color){ 130u, 140u, 154u, 110u };
+
+    if (is_hovered && !is_active) {
+        fill_color = (Color){ 58u, 65u, 78u, 226u };
+    }
+
+    DrawRectangleRec(rectangle, fill_color);
+    DrawRectangleLinesEx(rectangle, 1.0f, border_color);
+    DrawText(label, (int)(rectangle.x + 8.0f), (int)(rectangle.y + 7.0f), 10, (Color){ 245u, 247u, 250u, 240u });
+
+    return is_hovered && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+}
+
+static int pd_app_viewport_controller_local_panel_slider(
+    Rectangle rectangle,
+    const char* label,
+    float min_value,
+    float max_value,
+    float* value)
+{
+    Vector2 mouse_position = GetMousePosition();
+    float normalized_value;
+    float knob_x;
+    char value_text[64];
+    int is_changed = 0;
+    int is_hovered = pd_app_viewport_controller_local_point_in_rect(mouse_position, rectangle);
+
+    if (value == 0 || max_value <= min_value) {
+        return 0;
+    }
+
+    normalized_value = (*value - min_value) / (max_value - min_value);
+    normalized_value = pd_app_viewport_controller_local_clamp(normalized_value, 0.0f, 1.0f);
+
+    if (is_hovered && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+        normalized_value = (mouse_position.x - rectangle.x) / rectangle.width;
+        normalized_value = pd_app_viewport_controller_local_clamp(normalized_value, 0.0f, 1.0f);
+        *value = min_value + (normalized_value * (max_value - min_value));
+        is_changed = 1;
+    }
+
+    knob_x = rectangle.x + (normalized_value * rectangle.width);
+    DrawText(label, (int)rectangle.x, (int)(rectangle.y - 14.0f), 10, (Color){ 236u, 240u, 244u, 220u });
+    (void)snprintf(value_text, sizeof(value_text), "%.3f", (double)*value);
+    DrawText(
+        value_text,
+        (int)(rectangle.x + rectangle.width - 48.0f),
+        (int)(rectangle.y - 14.0f),
+        10,
+        (Color){ 198u, 207u, 220u, 220u });
+    DrawRectangleRec(rectangle, (Color){ 32u, 37u, 46u, 230u });
+    DrawRectangle(
+        (int)rectangle.x,
+        (int)rectangle.y,
+        (int)(normalized_value * rectangle.width),
+        (int)rectangle.height,
+        (Color){ 92u, 143u, 184u, 230u });
+    DrawRectangleLinesEx(rectangle, 1.0f, (Color){ 140u, 151u, 168u, 120u });
+    DrawCircle((int)knob_x, (int)(rectangle.y + (rectangle.height * 0.5f)), 5.0f, (Color){ 245u, 248u, 250u, 245u });
+
+    return is_changed;
+}
+
+static int pd_app_viewport_controller_local_panel_u8_slider(
+    Rectangle rectangle,
+    const char* label,
+    uint8_t* value)
+{
+    float float_value;
+    int is_changed;
+
+    if (value == 0) {
+        return 0;
+    }
+
+    float_value = (float)*value;
+    is_changed = pd_app_viewport_controller_local_panel_slider(rectangle, label, 0.0f, 255.0f, &float_value);
+    if (is_changed) {
+        *value = pd_app_viewport_controller_local_float_to_u8(float_value);
+    }
+
+    return is_changed;
+}
+
+static void pd_app_viewport_controller_local_normalize_light_direction(float light_direction[3])
+{
+    float length;
+
+    if (light_direction == 0) {
+        return;
+    }
+
+    length = sqrtf(
+        (light_direction[0] * light_direction[0]) +
+        (light_direction[1] * light_direction[1]) +
+        (light_direction[2] * light_direction[2]));
+    if (length <= 0.000001f) {
+        light_direction[0] = -0.45f;
+        light_direction[1] = -0.75f;
+        light_direction[2] = -0.5f;
+        return;
+    }
+
+    light_direction[0] /= length;
+    light_direction[1] /= length;
+    light_direction[2] /= length;
 }
 
 static Vector3 pd_app_viewport_controller_local_make_vector3(const float value[3])
@@ -780,6 +947,475 @@ static PdCoreResult pd_app_viewport_controller_local_update_visual_controls(
     return PD_CORE_RESULT_OK;
 }
 
+static void pd_app_viewport_controller_local_update_panel_shortcuts(PdEditorPanelState* panel_state)
+{
+    if (panel_state == 0) {
+        return;
+    }
+
+    if (IsKeyPressed(KEY_F1)) {
+        (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_MODELING);
+    }
+
+    if (IsKeyPressed(KEY_F2)) {
+        (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_TRANSFORM);
+    }
+
+    if (IsKeyPressed(KEY_F3)) {
+        (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_VISUAL);
+    }
+
+    if (IsKeyPressed(KEY_F4)) {
+        (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_LIGHTING);
+    }
+
+    if (IsKeyPressed(KEY_TAB)) {
+        pd_editor_panel_state_toggle(panel_state);
+    }
+}
+
+static PdCoreResult pd_app_viewport_controller_local_rebuild_face_highlight(
+    PdRenderMeshBuffer* face_highlight_buffer,
+    Model* face_highlight_model,
+    int* has_face_highlight_model,
+    const PdCoreMeshEntity* mesh_entity,
+    uint32_t face_index,
+    PdRenderFaceHighlightConfig face_highlight_config);
+
+static void pd_app_viewport_controller_local_draw_panel_tabs(PdEditorPanelState* panel_state, Rectangle panel_rect)
+{
+    Rectangle tab_rect;
+    float tab_width = (panel_rect.width - 24.0f) / 4.0f;
+
+    if (panel_state == 0) {
+        return;
+    }
+
+    tab_rect = (Rectangle){ panel_rect.x + 10.0f, panel_rect.y + 34.0f, tab_width, 28.0f };
+    if (pd_app_viewport_controller_local_panel_button(
+            tab_rect,
+            "Model",
+            panel_state->active_panel == PD_EDITOR_PANEL_KIND_MODELING)) {
+        (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_MODELING);
+    }
+
+    tab_rect.x += tab_width + 2.0f;
+    if (pd_app_viewport_controller_local_panel_button(
+            tab_rect,
+            "Move",
+            panel_state->active_panel == PD_EDITOR_PANEL_KIND_TRANSFORM)) {
+        (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_TRANSFORM);
+    }
+
+    tab_rect.x += tab_width + 2.0f;
+    if (pd_app_viewport_controller_local_panel_button(
+            tab_rect,
+            "Visual",
+            panel_state->active_panel == PD_EDITOR_PANEL_KIND_VISUAL)) {
+        (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_VISUAL);
+    }
+
+    tab_rect.x += tab_width + 2.0f;
+    if (pd_app_viewport_controller_local_panel_button(
+            tab_rect,
+            "Light",
+            panel_state->active_panel == PD_EDITOR_PANEL_KIND_LIGHTING)) {
+        (void)pd_editor_panel_state_set_active(panel_state, PD_EDITOR_PANEL_KIND_LIGHTING);
+    }
+}
+
+static PdCoreResult pd_app_viewport_controller_local_rebuild_panel_models(
+    PdAppContextEntity* app_context,
+    PdRenderMeshBuffer* render_mesh_buffer,
+    Model* cube_model,
+    PdRenderMeshBuffer* face_highlight_buffer,
+    Model* face_highlight_model,
+    int* has_face_highlight_model,
+    PdRenderFaceHighlightConfig face_highlight_config)
+{
+    uint32_t face_index = PD_CORE_MESH_ENTITY_INVALID_INDEX;
+
+    if (app_context == 0 || render_mesh_buffer == 0 || cube_model == 0 || face_highlight_buffer == 0 ||
+        face_highlight_model == 0 || has_face_highlight_model == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (pd_app_viewport_controller_local_rebuild_cube_model(
+            render_mesh_buffer,
+            cube_model,
+            &app_context->active_mesh) != PD_CORE_RESULT_OK) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (app_context->selection_state.kind == PD_EDITOR_SELECTION_KIND_FACE &&
+        app_context->selection_state.primary_index < app_context->active_mesh.face_count) {
+        face_index = app_context->selection_state.primary_index;
+    }
+
+    return pd_app_viewport_controller_local_rebuild_face_highlight(
+        face_highlight_buffer,
+        face_highlight_model,
+        has_face_highlight_model,
+        &app_context->active_mesh,
+        face_index,
+        face_highlight_config);
+}
+
+static PdCoreResult pd_app_viewport_controller_local_draw_modeling_panel(
+    PdAppContextEntity* app_context,
+    PdRenderMeshBuffer* render_mesh_buffer,
+    Model* cube_model,
+    PdRenderMeshBuffer* face_highlight_buffer,
+    Model* face_highlight_model,
+    int* has_face_highlight_model,
+    PdRenderFaceHighlightConfig face_highlight_config,
+    float panel_x,
+    float* panel_y)
+{
+    Rectangle button_rect;
+    PdEditorToolKind tool_kind = PD_EDITOR_TOOL_KIND_VIEW;
+    int should_apply = 0;
+
+    if (app_context == 0 || panel_y == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    pd_app_viewport_controller_local_draw_panel_text("Modeling", panel_x, *panel_y, 12);
+    *panel_y += 20.0f;
+
+    button_rect = (Rectangle){ panel_x, *panel_y, 132.0f, 28.0f };
+    if (pd_app_viewport_controller_local_panel_button(button_rect, "Inset", 0)) {
+        tool_kind = PD_EDITOR_TOOL_KIND_INSET;
+        should_apply = 1;
+    }
+
+    button_rect.x += 142.0f;
+    if (pd_app_viewport_controller_local_panel_button(button_rect, "Extrude", 0)) {
+        tool_kind = PD_EDITOR_TOOL_KIND_EXTRUDE;
+        should_apply = 1;
+    }
+
+    *panel_y += 36.0f;
+    button_rect = (Rectangle){ panel_x, *panel_y, 132.0f, 28.0f };
+    if (pd_app_viewport_controller_local_panel_button(button_rect, "Bevel", 0)) {
+        tool_kind = PD_EDITOR_TOOL_KIND_BEVEL;
+        should_apply = 1;
+    }
+
+    button_rect.x += 142.0f;
+    if (pd_app_viewport_controller_local_panel_button(button_rect, "Loop cut", 0)) {
+        tool_kind = PD_EDITOR_TOOL_KIND_LOOP_CUT;
+        should_apply = 1;
+    }
+
+    *panel_y += 46.0f;
+    pd_app_viewport_controller_local_draw_panel_text(
+        "Select a face, then click a modeling button.",
+        panel_x,
+        *panel_y,
+        10);
+    *panel_y += 18.0f;
+
+    if (should_apply &&
+        pd_app_viewport_controller_local_apply_modeling_command(app_context, tool_kind) == PD_CORE_RESULT_OK) {
+        return pd_app_viewport_controller_local_rebuild_panel_models(
+            app_context,
+            render_mesh_buffer,
+            cube_model,
+            face_highlight_buffer,
+            face_highlight_model,
+            has_face_highlight_model,
+            face_highlight_config);
+    }
+
+    return PD_CORE_RESULT_OK;
+}
+
+static void pd_app_viewport_controller_local_draw_transform_panel(
+    PdAppContextEntity* app_context,
+    float panel_x,
+    float* panel_y)
+{
+    Rectangle slider_rect;
+    Rectangle button_rect;
+
+    if (app_context == 0 || panel_y == 0) {
+        return;
+    }
+
+    pd_app_viewport_controller_local_draw_panel_text("Transform", panel_x, *panel_y, 12);
+    *panel_y += 34.0f;
+    slider_rect = (Rectangle){ panel_x, *panel_y, 274.0f, 12.0f };
+    (void)pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Position X",
+        -3.0f,
+        3.0f,
+        &app_context->transform_state.position[0]);
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Position Y",
+        -3.0f,
+        3.0f,
+        &app_context->transform_state.position[1]);
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Position Z",
+        -3.0f,
+        3.0f,
+        &app_context->transform_state.position[2]);
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Rotate Y",
+        -180.0f,
+        180.0f,
+        &app_context->transform_state.rotation_degrees[1]);
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Scale",
+        0.2f,
+        2.5f,
+        &app_context->transform_state.scale[0]);
+    app_context->transform_state.scale[1] = app_context->transform_state.scale[0];
+    app_context->transform_state.scale[2] = app_context->transform_state.scale[0];
+
+    *panel_y = slider_rect.y + 30.0f;
+    button_rect = (Rectangle){ panel_x, *panel_y, 132.0f, 28.0f };
+    if (pd_app_viewport_controller_local_panel_button(button_rect, "Reset", 0)) {
+        (void)pd_editor_transform_state_reset(&app_context->transform_state);
+    }
+    *panel_y += 38.0f;
+}
+
+static PdCoreResult pd_app_viewport_controller_local_draw_visual_panel(
+    PdAppContextEntity* app_context,
+    PdRenderMeshBuffer* render_mesh_buffer,
+    Model* cube_model,
+    float panel_x,
+    float* panel_y)
+{
+    Rectangle slider_rect;
+    int needs_cube_rebuild = 0;
+
+    if (app_context == 0 || render_mesh_buffer == 0 || cube_model == 0 || panel_y == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    pd_app_viewport_controller_local_draw_panel_text("Face color", panel_x, *panel_y, 12);
+    *panel_y += 34.0f;
+    slider_rect = (Rectangle){ panel_x, *panel_y, 274.0f, 12.0f };
+    needs_cube_rebuild |= pd_app_viewport_controller_local_panel_u8_slider(
+        slider_rect,
+        "Face R",
+        &app_context->visual_state.face_color[0]);
+    slider_rect.y += 38.0f;
+    needs_cube_rebuild |= pd_app_viewport_controller_local_panel_u8_slider(
+        slider_rect,
+        "Face G",
+        &app_context->visual_state.face_color[1]);
+    slider_rect.y += 38.0f;
+    needs_cube_rebuild |= pd_app_viewport_controller_local_panel_u8_slider(
+        slider_rect,
+        "Face B",
+        &app_context->visual_state.face_color[2]);
+    if (needs_cube_rebuild) {
+        (void)pd_editor_tool_state_set_active(&app_context->tool_state, PD_EDITOR_TOOL_KIND_COLOR);
+        if (pd_app_viewport_controller_local_apply_selected_face_color(app_context) != PD_CORE_RESULT_OK ||
+            pd_app_viewport_controller_local_rebuild_cube_model(render_mesh_buffer, cube_model, &app_context->active_mesh) !=
+                PD_CORE_RESULT_OK) {
+            return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+        }
+    }
+
+    *panel_y = slider_rect.y + 34.0f;
+    pd_app_viewport_controller_local_draw_panel_text("Background", panel_x, *panel_y, 12);
+    *panel_y += 34.0f;
+    slider_rect = (Rectangle){ panel_x, *panel_y, 274.0f, 12.0f };
+    (void)pd_app_viewport_controller_local_panel_u8_slider(
+        slider_rect,
+        "BG R",
+        &app_context->visual_state.background_color[0]);
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_u8_slider(
+        slider_rect,
+        "BG G",
+        &app_context->visual_state.background_color[1]);
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_u8_slider(
+        slider_rect,
+        "BG B",
+        &app_context->visual_state.background_color[2]);
+
+    *panel_y = slider_rect.y + 34.0f;
+    pd_app_viewport_controller_local_draw_panel_text("Outline", panel_x, *panel_y, 12);
+    *panel_y += 34.0f;
+    slider_rect = (Rectangle){ panel_x, *panel_y, 274.0f, 12.0f };
+    (void)pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Radius",
+        0.5f,
+        3.0f,
+        &app_context->visual_state.edge_sample_radius);
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Depth",
+        0.001f,
+        0.08f,
+        &app_context->visual_state.edge_depth_threshold);
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Normal",
+        0.02f,
+        1.0f,
+        &app_context->visual_state.edge_normal_threshold);
+
+    *panel_y = slider_rect.y + 30.0f;
+    return PD_CORE_RESULT_OK;
+}
+
+static void pd_app_viewport_controller_local_draw_lighting_panel(
+    PdAppContextEntity* app_context,
+    float panel_x,
+    float* panel_y)
+{
+    Rectangle slider_rect;
+    float shadow_alpha;
+    int light_changed = 0;
+
+    if (app_context == 0 || panel_y == 0) {
+        return;
+    }
+
+    pd_app_viewport_controller_local_draw_panel_text("Lighting", panel_x, *panel_y, 12);
+    *panel_y += 34.0f;
+    slider_rect = (Rectangle){ panel_x, *panel_y, 274.0f, 12.0f };
+    light_changed |= pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Light X",
+        -1.0f,
+        1.0f,
+        &app_context->visual_state.light_direction[0]);
+    slider_rect.y += 38.0f;
+    light_changed |= pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Light Y",
+        -1.0f,
+        1.0f,
+        &app_context->visual_state.light_direction[1]);
+    slider_rect.y += 38.0f;
+    light_changed |= pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Light Z",
+        -1.0f,
+        1.0f,
+        &app_context->visual_state.light_direction[2]);
+    if (light_changed) {
+        pd_app_viewport_controller_local_normalize_light_direction(app_context->visual_state.light_direction);
+    }
+
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Dark",
+        0.05f,
+        0.9f,
+        &app_context->visual_state.dark_intensity);
+    slider_rect.y += 38.0f;
+    shadow_alpha = (float)app_context->visual_state.shadow_color[3];
+    if (pd_app_viewport_controller_local_panel_slider(slider_rect, "Shadow", 0.0f, 255.0f, &shadow_alpha)) {
+        app_context->visual_state.shadow_color[3] = pd_app_viewport_controller_local_float_to_u8(shadow_alpha);
+    }
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Shadow X",
+        -3.0f,
+        3.0f,
+        &app_context->visual_state.shadow_offset_x);
+    slider_rect.y += 38.0f;
+    (void)pd_app_viewport_controller_local_panel_slider(
+        slider_rect,
+        "Shadow Z",
+        -3.0f,
+        3.0f,
+        &app_context->visual_state.shadow_offset_z);
+    *panel_y = slider_rect.y + 30.0f;
+}
+
+static PdCoreResult pd_app_viewport_controller_local_update_and_draw_panel(
+    PdAppContextEntity* app_context,
+    PdRenderMeshBuffer* render_mesh_buffer,
+    Model* cube_model,
+    PdRenderMeshBuffer* face_highlight_buffer,
+    Model* face_highlight_model,
+    int* has_face_highlight_model,
+    PdRenderFaceHighlightConfig face_highlight_config)
+{
+    Rectangle panel_rect;
+    float panel_x;
+    float panel_y;
+    char title[96];
+
+    if (app_context == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (!app_context->panel_state.is_open) {
+        DrawRectangle(12, GetScreenHeight() - 34, 188, 24, (Color){ 20u, 23u, 28u, 172u });
+        DrawText("Panel hidden - press Tab", 20, GetScreenHeight() - 28, 10, (Color){ 236u, 240u, 244u, 220u });
+        return PD_CORE_RESULT_OK;
+    }
+
+    panel_rect = pd_app_viewport_controller_local_get_panel_rect();
+    panel_x = panel_rect.x + 16.0f;
+    panel_y = panel_rect.y + 74.0f;
+
+    DrawRectangleRec(panel_rect, (Color){ 18u, 21u, 27u, 212u });
+    DrawRectangleLinesEx(panel_rect, 1.0f, (Color){ 232u, 238u, 245u, 88u });
+    (void)snprintf(
+        title,
+        sizeof(title),
+        "Controls  %s",
+        pd_editor_panel_state_get_name(app_context->panel_state.active_panel));
+    pd_app_viewport_controller_local_draw_panel_text(title, panel_rect.x + 12.0f, panel_rect.y + 12.0f, 13);
+    pd_app_viewport_controller_local_draw_panel_tabs(&app_context->panel_state, panel_rect);
+
+    switch (app_context->panel_state.active_panel) {
+        case PD_EDITOR_PANEL_KIND_MODELING:
+            return pd_app_viewport_controller_local_draw_modeling_panel(
+                app_context,
+                render_mesh_buffer,
+                cube_model,
+                face_highlight_buffer,
+                face_highlight_model,
+                has_face_highlight_model,
+                face_highlight_config,
+                panel_x,
+                &panel_y);
+        case PD_EDITOR_PANEL_KIND_TRANSFORM:
+            pd_app_viewport_controller_local_draw_transform_panel(app_context, panel_x, &panel_y);
+            return PD_CORE_RESULT_OK;
+        case PD_EDITOR_PANEL_KIND_VISUAL:
+            return pd_app_viewport_controller_local_draw_visual_panel(
+                app_context,
+                render_mesh_buffer,
+                cube_model,
+                panel_x,
+                &panel_y);
+        case PD_EDITOR_PANEL_KIND_LIGHTING:
+            pd_app_viewport_controller_local_draw_lighting_panel(app_context, panel_x, &panel_y);
+            return PD_CORE_RESULT_OK;
+        default:
+            return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+}
+
 static void pd_app_viewport_controller_local_draw_overlay_line(const char* text, int* y)
 {
     if (text == 0 || y == 0) {
@@ -1236,6 +1872,7 @@ int main(int argc, char** argv)
         if (is_interactive) {
             needs_cube_model_rebuild = 0;
             needs_face_highlight_rebuild = 0;
+            pd_app_viewport_controller_local_update_panel_shortcuts(&app_context.panel_state);
             pd_app_viewport_controller_local_update_camera(&camera_state);
             pd_app_viewport_controller_local_update_transform_tool(&app_context.tool_state);
             pd_app_viewport_controller_local_update_transform(&app_context.transform_state);
@@ -1275,7 +1912,8 @@ int main(int argc, char** argv)
                 break;
             }
 
-            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
+            if (!pd_app_viewport_controller_local_is_panel_mouse_target(&app_context) &&
+                IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
                 pd_app_viewport_controller_local_pick_face(
                     &app_context,
                     &face_highlight_buffer,
@@ -1353,8 +1991,21 @@ int main(int argc, char** argv)
         EndShaderMode();
         if (is_interactive) {
             pd_app_viewport_controller_local_draw_overlay(&app_context, visual_config, shadow_config);
+            if (pd_app_viewport_controller_local_update_and_draw_panel(
+                    &app_context,
+                    &render_mesh_buffer,
+                    &cube_model,
+                    &face_highlight_buffer,
+                    &face_highlight_model,
+                    &has_face_highlight_model,
+                    face_highlight_config) != PD_CORE_RESULT_OK) {
+                run_result = 1;
+            }
         }
         EndDrawing();
+        if (run_result != 0) {
+            break;
+        }
     } while (is_interactive && !WindowShouldClose());
 
     if (run_result == 0 && !is_interactive) {

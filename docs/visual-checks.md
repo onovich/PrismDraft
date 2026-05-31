@@ -107,6 +107,16 @@ tools\SmokeViewportInteractive.cmd
 
 Controls:
 
+- Operation panel: primary control surface for modeling, transform, visual, and lighting parameters.
+- `F1`: open the Model panel.
+- `F2`: open the Move panel.
+- `F3`: open the Visual panel.
+- `F4`: open the Light panel.
+- `Tab`: hide or show the current operation panel.
+- Model panel buttons: apply inset, extrude, bevel, or loop cut to the selected face.
+- Move panel sliders: adjust object position, Y rotation, and uniform scale; `Reset` restores transform defaults.
+- Visual panel sliders: adjust selected-face RGB, background RGB, outline radius, depth threshold, and normal threshold.
+- Light panel sliders: adjust light direction, dark-side intensity, shadow strength, and shadow offset.
 - Right mouse drag: orbit camera around the model.
 - Middle mouse drag: pan camera target and position.
 - Mouse wheel: zoom the orthographic camera.
@@ -136,9 +146,11 @@ Current comparison:
 
 - Pass: The interaction layer uses existing `editor` face picking and render face highlight buffers instead of duplicating business logic in the app layer.
 - Pass: The default screenshot smoke remains non-interactive and still exits after rendering `captures/phase2_cube.png`.
+- Pass: The operation panel is an app-layer immediate control surface backed by `PdEditorPanelState`, while model edits still route through the existing editor modeling service.
 - Pass: Face color, background color, outline thickness, edge thresholds, light direction, dark intensity, shadow strength, and shadow offset are editable through keyboard controls.
 - Pass: Interactive mode draws a compact state overlay for selection, transform, color, outline, lighting, and shadow values without changing the automated screenshot baseline.
 - Pass: Interactive modeling shortcuts call the existing core inset, extrude, bevel, and loop cut controllers, then rebuild the viewport mesh and selected-face highlight.
+- Watch: Keyboard controls remain as fallback smoke inputs; day-to-day editing should use the operation panel, with shortcuts mainly opening or switching panels.
 - Watch: The user still needs to manually re-check edge placement and anti-aliasing in the interactive viewport after the Phase 5 render pass.
 
 ## Phase 6 Export Smoke

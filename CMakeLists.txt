@@ -88,6 +88,7 @@ endif()
 
 add_library(prismdraft_editor STATIC
   src/editor/pd_editor_modeling_service.c
+  src/editor/pd_editor_panel_state.c
   src/editor/pd_editor_pick_service.c
   src/editor/pd_editor_selection_state.c
   src/editor/pd_editor_tool_state.c
@@ -428,6 +429,26 @@ endif()
 add_test(
   NAME pd_editor_selection_state_test
   COMMAND pd_editor_selection_state_test
+)
+
+add_executable(pd_editor_panel_state_test
+  tests/editor/pd_editor_panel_state_test.c
+)
+
+target_link_libraries(pd_editor_panel_state_test
+  PRIVATE
+    prismdraft_editor
+)
+
+if(MSVC)
+  target_compile_options(pd_editor_panel_state_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(pd_editor_panel_state_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(
+  NAME pd_editor_panel_state_test
+  COMMAND pd_editor_panel_state_test
 )
 
 add_executable(pd_editor_pick_service_test

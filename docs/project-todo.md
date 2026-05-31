@@ -4,9 +4,9 @@ This TODO translates the design mirror and visual references into small Codex-si
 
 ## Current Focus
 
-Phase 6: Basic editor controls and user-facing smoke readiness.
+Phase 7: Operation panel and grouped direct controls.
 
-The current milestone is turning the proven data/render/export pieces into a small but testable editor loop. Keep the manual smoke feedback visible until the user has re-checked the viewport and the interaction controls feel complete enough for repeated testing.
+The current milestone is moving routine editing from shortcut-first smoke inputs to a direct operation panel with grouped controls. Keyboard shortcuts should remain useful for quick panel switching and smoke fallback, not as the primary way to tune modeling, transform, visual, and lighting parameters.
 
 ## Open User-Facing TODO
 
@@ -31,6 +31,9 @@ These items track the issues and expected controls from manual smoke. Do not rem
 - [x] Add `tools\SmokeInteraction.cmd` to cover the user-facing interaction regressions when manual smoke is unavailable.
 - [x] Add app-level glTF and GLB export smoke from the edited mesh.
 - [x] Add a minimal app-level timeline demo that applies PRS animation to an object.
+- [x] Add an app-layer operation panel with grouped Model, Move, Visual, and Light controls.
+- [x] Make `F1`-`F4` switch grouped operation panels and `Tab` hide/show the panel.
+- [x] Ensure mouse clicks inside the operation panel do not also trigger viewport face picking.
 
 ## Phase 0: Preparation
 
@@ -132,6 +135,16 @@ These items track the issues and expected controls from manual smoke. Do not rem
 6. Wire modeling commands into the interactive smoke: inset, extrude, bevel, and loop cut.
 7. Add app-level export smoke for glTF and GLB from the edited mesh.
 8. Add the minimal PRS timeline demo after transform state is visible in the app layer.
+
+## Phase 7: Operation Panel
+
+- [x] Add `PdEditorPanelState` as the editor-owned state for active panel and panel visibility.
+- [x] Store panel state in `PdAppContextEntity` so the UI remains reachable from root app state.
+- [x] Add grouped Model, Move, Visual, and Light operation panels in the Raylib app viewport.
+- [x] Route Model panel buttons through the existing editor modeling service and rebuild render buffers after edits.
+- [x] Add direct sliders for transform, face color, background color, outline tuning, lighting, and shadow tuning.
+- [x] Keep keyboard shortcuts as fallback smoke inputs while making `F1`-`F4` and `Tab` panel navigation shortcuts.
+- [x] Document operation panel manual smoke expectations.
 
 ## Always-On Checks
 

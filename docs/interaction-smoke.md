@@ -14,6 +14,7 @@ It configures and builds the project, runs the focused interaction tests, captur
 
 - `pd_core_face_loop_cut_controller_test`: `4` must split the selected quad into two quads with midpoint vertices. It must not turn the selected face into two triangles.
 - `pd_core_face_bevel_controller_test`: `3` must create an inward chamfer with sloped ring-face normals. It must not behave as an outward extrusion.
+- `pd_editor_panel_state_test`: operation panels must initialize open, switch between grouped panels, toggle visibility, and expose stable names for the viewport UI.
 - `pd_editor_modeling_service_test`: the editor modeling service must keep all modeled meshes valid and pickable.
 - `pd_editor_visual_state_test`: visual controls must continue to clamp and step through valid outline, light, dark, shadow, face, and background values.
 - `visual-edge-low` / `visual-edge-high`: depth edge threshold changes must produce a localized visible screenshot difference.
@@ -35,6 +36,12 @@ tools\SmokeViewportInteractive.cmd
 
 Manual checks:
 
+- Use the operation panel as the primary control surface. `F1` opens Model, `F2` opens Move, `F3` opens Visual, `F4` opens Light, and `Tab` hides or shows the panel.
+- Click panel tabs and controls; clicks inside the panel should not pick or clear model faces behind the panel.
+- In Model, select a face and click `Inset`, `Extrude`, `Bevel`, and `Loop cut`; each button should update the mesh and selected-face highlight.
+- In Move, drag position, rotate, and scale sliders; the object should update in the next frame, and `Reset` should restore the default transform.
+- In Visual, drag face RGB sliders, background RGB sliders, and outline sliders; selected-face color, background, and edge response should visibly change.
+- In Light, drag light direction, dark intensity, shadow strength, and shadow offset sliders; hard-step lighting and the projected shadow should visibly update.
 - Press `-` / `=` and confirm outline strength visibly fades or strengthens, not only the overlay value.
 - Press `;` / `'` and confirm crease/normal edge sensitivity visibly changes.
 - Press `U` / `I` and confirm shaded faces visibly lighten or darken.

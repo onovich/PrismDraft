@@ -16,6 +16,11 @@ int main(void)
         return 1;
     }
 
+    if (app_context.panel_state.active_panel != PD_EDITOR_PANEL_KIND_MODELING || !app_context.panel_state.is_open) {
+        pd_app_lifecycle_controller_shutdown(&app_context);
+        return 1;
+    }
+
     if (pd_editor_selection_state_select_face(&app_context.selection_state, 1u) != PD_CORE_RESULT_OK) {
         pd_app_lifecycle_controller_shutdown(&app_context);
         return 1;
