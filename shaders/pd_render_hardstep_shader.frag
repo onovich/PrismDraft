@@ -12,6 +12,7 @@ void main()
 {
     float lightValue = dot(normalize(fragNormal), normalize(-lightDirection));
     float litBand = smoothstep(-0.08, 0.36, lightValue);
-    float intensity = mix(darkIntensity, 1.0, litBand);
+    float litIntensity = 0.82 + ((1.0 - darkIntensity) * 0.25);
+    float intensity = mix(darkIntensity, litIntensity, litBand);
     finalColor = vec4(fragColor.rgb * intensity, fragColor.a);
 }

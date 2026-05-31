@@ -8,7 +8,7 @@ This workflow covers user-facing regressions that are easy to miss in the broad 
 tools\SmokeInteraction.cmd
 ```
 
-It configures and builds the project, runs the focused interaction tests, then captures the viewport through `tools\SmokeViewport.cmd`.
+It configures and builds the project, runs the focused interaction tests, captures multiple viewport smoke cases, then compares screenshot pixel differences for visible feedback.
 
 ## Coverage
 
@@ -16,7 +16,12 @@ It configures and builds the project, runs the focused interaction tests, then c
 - `pd_core_face_bevel_controller_test`: `3` must create an inward chamfer with sloped ring-face normals. It must not behave as an outward extrusion.
 - `pd_editor_modeling_service_test`: the editor modeling service must keep all modeled meshes valid and pickable.
 - `pd_editor_visual_state_test`: visual controls must continue to clamp and step through valid outline, light, dark, shadow, face, and background values.
-- `tools\SmokeViewport.cmd`: the shader path must compile and produce `captures/phase2_cube.png`.
+- `visual-edge-low` / `visual-edge-high`: depth edge threshold changes must produce a localized visible screenshot difference.
+- `visual-normal-low` / `visual-normal-high`: normal edge threshold changes must produce a localized visible screenshot difference.
+- `visual-dark-low` / `visual-dark-high`: dark intensity changes must produce a broad screenshot difference.
+- `tools\SmokeViewport.cmd`: the default shader path must compile and produce `captures/phase2_cube.png`.
+
+The visual difference gates intentionally combine average difference, changed-pixel ratio, and max difference. Edge changes are local by nature, so a low full-image average is acceptable only when enough sampled edge pixels move by a large amount.
 
 ## Manual Follow-Up
 

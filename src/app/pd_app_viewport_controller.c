@@ -59,6 +59,26 @@ static int pd_app_viewport_controller_local_has_argument(int argc, char** argv, 
     return 0;
 }
 
+static const char* pd_app_viewport_controller_local_get_argument_value(
+    int argc,
+    char** argv,
+    const char* expected_argument)
+{
+    int argument_index;
+
+    if (argv == 0 || expected_argument == 0) {
+        return 0;
+    }
+
+    for (argument_index = 1; argument_index < argc - 1; argument_index++) {
+        if (argv[argument_index] != 0 && strcmp(argv[argument_index], expected_argument) == 0) {
+            return argv[argument_index + 1];
+        }
+    }
+
+    return 0;
+}
+
 static float pd_app_viewport_controller_local_clamp(float value, float min_value, float max_value)
 {
     if (value < min_value) {
@@ -531,6 +551,63 @@ static PdCoreResult pd_app_viewport_controller_local_update_modeling_controls(
     *needs_cube_model_rebuild = 1;
     *needs_face_highlight_rebuild = 1;
     return PD_CORE_RESULT_OK;
+}
+
+static PdCoreResult pd_app_viewport_controller_local_apply_smoke_case(
+    PdAppContextEntity* app_context,
+    const char* smoke_case)
+{
+    if (app_context == 0) {
+        return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (smoke_case == 0 || smoke_case[0] == '\0') {
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (strcmp(smoke_case, "visual-edge-low") == 0) {
+        app_context->visual_state.edge_depth_threshold = 0.001f;
+        app_context->visual_state.edge_normal_threshold = 1.0f;
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (strcmp(smoke_case, "visual-edge-high") == 0) {
+        app_context->visual_state.edge_depth_threshold = 0.08f;
+        app_context->visual_state.edge_normal_threshold = 1.0f;
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (strcmp(smoke_case, "visual-normal-low") == 0) {
+        app_context->visual_state.edge_depth_threshold = 0.08f;
+        app_context->visual_state.edge_normal_threshold = 0.02f;
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (strcmp(smoke_case, "visual-normal-high") == 0) {
+        app_context->visual_state.edge_depth_threshold = 0.08f;
+        app_context->visual_state.edge_normal_threshold = 1.0f;
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (strcmp(smoke_case, "visual-dark-low") == 0) {
+        app_context->visual_state.dark_intensity = 0.05f;
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (strcmp(smoke_case, "visual-dark-high") == 0) {
+        app_context->visual_state.dark_intensity = 0.9f;
+        return PD_CORE_RESULT_OK;
+    }
+
+    if (strcmp(smoke_case, "modeling-bevel") == 0) {
+        return pd_app_viewport_controller_local_apply_modeling_command(app_context, PD_EDITOR_TOOL_KIND_BEVEL);
+    }
+
+    if (strcmp(smoke_case, "modeling-loop-cut") == 0) {
+        return pd_app_viewport_controller_local_apply_modeling_command(app_context, PD_EDITOR_TOOL_KIND_LOOP_CUT);
+    }
+
+    return PD_CORE_RESULT_ERROR_INVALID_ARGUMENT;
 }
 
 static PdCoreResult pd_app_viewport_controller_local_update_visual_controls(
@@ -1055,22 +1132,32 @@ int main(int argc, char** argv)
     Rectangle screen_destination;
     Vector2 screen_position = { 0.0f, 0.0f };
     int is_interactive = pd_app_viewport_controller_local_has_argument(argc, argv, "--interactive");
+    const char* smoke_case = pd_app_viewport_controller_local_get_argument_value(argc, argv, "--smoke-case");
     int has_face_highlight_model = 0;
     int needs_cube_model_rebuild = 0;
     int needs_face_highlight_rebuild = 0;
     int run_result = 0;
+    char capture_path[256] = "captures/phase2_cube.png";
 
     if (pd_app_lifecycle_controller_init(&app_context) != PD_CORE_RESULT_OK) {
         return 1;
     }
 
-    if (pd_render_mesh_buffer_build_from_mesh(&render_mesh_buffer, &app_context.active_mesh) != PD_CORE_RESULT_OK) {
+    if (pd_editor_selection_state_select_face(&app_context.selection_state, 1u) != PD_CORE_RESULT_OK) {
         pd_app_lifecycle_controller_shutdown(&app_context);
         return 1;
     }
 
-    if (pd_editor_selection_state_select_face(&app_context.selection_state, 1u) != PD_CORE_RESULT_OK) {
-        pd_render_mesh_buffer_free(&render_mesh_buffer);
+    if (pd_app_viewport_controller_local_apply_smoke_case(&app_context, smoke_case) != PD_CORE_RESULT_OK) {
+        pd_app_lifecycle_controller_shutdown(&app_context);
+        return 1;
+    }
+
+    if (smoke_case != 0 && smoke_case[0] != '\0') {
+        (void)snprintf(capture_path, sizeof(capture_path), "captures/%s.png", smoke_case);
+    }
+
+    if (pd_render_mesh_buffer_build_from_mesh(&render_mesh_buffer, &app_context.active_mesh) != PD_CORE_RESULT_OK) {
         pd_app_lifecycle_controller_shutdown(&app_context);
         return 1;
     }
@@ -1268,7 +1355,7 @@ int main(int argc, char** argv)
 
     if (run_result == 0 && !is_interactive) {
         MakeDirectory("captures");
-        TakeScreenshot("captures/phase2_cube.png");
+        TakeScreenshot(capture_path);
     }
 
     cube_model.materials[0].shader = (Shader){ 0 };

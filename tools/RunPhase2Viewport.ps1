@@ -1,3 +1,8 @@
+param(
+  [Parameter(ValueFromRemainingArguments = $true)]
+  [string[]]$ViewportArgs = @()
+)
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
@@ -13,13 +18,25 @@ if (-not (Test-Path -LiteralPath $exePath)) {
   throw "Viewport executable was not found: $exePath"
 }
 
-$command = "`"$vsDevCmdPath`" -arch=x64 && cd /d `"$repoRoot`" && `"$exePath`""
+$argumentText = ""
+if ($ViewportArgs.Count -gt 0) {
+  $quotedArgs = $ViewportArgs | ForEach-Object { "`"$($_ -replace '"', '\"')`"" }
+  $argumentText = " " + ($quotedArgs -join " ")
+}
+
+$command = "`"$vsDevCmdPath`" -arch=x64 && cd /d `"$repoRoot`" && `"$exePath`"$argumentText"
 cmd /c $command
 if ($LASTEXITCODE -ne 0) {
   exit $LASTEXITCODE
 }
 
-$capturePath = Join-Path $repoRoot "captures/phase2_cube.png"
+$captureName = "phase2_cube"
+$caseArgumentIndex = [Array]::IndexOf($ViewportArgs, "--smoke-case")
+if ($caseArgumentIndex -ge 0 -and $caseArgumentIndex -lt ($ViewportArgs.Count - 1)) {
+  $captureName = $ViewportArgs[$caseArgumentIndex + 1]
+}
+
+$capturePath = Join-Path $repoRoot "captures/$captureName.png"
 if (-not (Test-Path -LiteralPath $capturePath)) {
   throw "Expected screenshot was not produced: $capturePath"
 }
