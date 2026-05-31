@@ -23,13 +23,15 @@ static void pd_core_face_bevel_controller_test_local_bevels_cube_front_face(void
     assert(pd_core_cube_fixture_build(&mesh_entity) == PD_CORE_RESULT_OK);
     assert(pd_core_face_bevel_controller_apply(&mesh_entity, 1u, 0.25f, 0.2f) == PD_CORE_RESULT_OK);
 
-    assert(mesh_entity.vertex_count == 16u);
-    assert(mesh_entity.half_edge_count == 56u);
-    assert(mesh_entity.face_count == 14u);
-    assert(mesh_entity.faces[1].half_edge == 40u);
-    assert(pd_core_face_bevel_controller_test_local_near(mesh_entity.vertices[12].position[0], -0.75f));
-    assert(pd_core_face_bevel_controller_test_local_near(mesh_entity.vertices[12].position[1], -0.75f));
-    assert(pd_core_face_bevel_controller_test_local_near(mesh_entity.vertices[12].position[2], 1.2f));
+    assert(mesh_entity.vertex_count == 12u);
+    assert(mesh_entity.half_edge_count == 40u);
+    assert(mesh_entity.face_count == 10u);
+    assert(mesh_entity.faces[1].half_edge == 24u);
+    assert(pd_core_face_bevel_controller_test_local_near(mesh_entity.vertices[8].position[0], -0.75f));
+    assert(pd_core_face_bevel_controller_test_local_near(mesh_entity.vertices[8].position[1], -0.75f));
+    assert(pd_core_face_bevel_controller_test_local_near(mesh_entity.vertices[8].position[2], 0.8f));
+    assert(mesh_entity.faces[6].face_normal[1] < -0.5f);
+    assert(mesh_entity.faces[6].face_normal[2] > 0.5f);
     assert(pd_core_mesh_validator_check(&mesh_entity) == PD_CORE_RESULT_OK);
 
     pd_core_mesh_storage_controller_free(&mesh_entity);

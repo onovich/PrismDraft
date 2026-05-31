@@ -58,7 +58,10 @@ void main()
     float depthMask = smoothstep(edgeDepthThreshold * 0.75, edgeDepthThreshold * 1.85, depthEdge);
     float normalMask = smoothstep(edgeNormalThreshold * 0.75, edgeNormalThreshold * 1.85, normalEdge);
     float edgeMask = clamp(max(depthMask, normalMask), 0.0, 1.0);
+    float depthSensitivity = clamp((0.08 - edgeDepthThreshold) / 0.079, 0.0, 1.0);
+    float normalSensitivity = clamp((1.0 - edgeNormalThreshold) / 0.98, 0.0, 1.0);
+    float edgeStrength = mix(0.18, 0.78, max(depthSensitivity, normalSensitivity));
 
     vec3 edgeColor = vec3(0.11, 0.12, 0.16);
-    finalColor = vec4(mix(baseColor.rgb, edgeColor, edgeMask * 0.42), baseColor.a);
+    finalColor = vec4(mix(baseColor.rgb, edgeColor, edgeMask * edgeStrength), baseColor.a);
 }
